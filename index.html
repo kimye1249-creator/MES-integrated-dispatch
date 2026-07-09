@@ -312,6 +312,295 @@ select.form-control { cursor: pointer; }
   .bar-chart > div{height:100% !important;display:flex;flex-direction:column;justify-content:flex-end;align-items:center}
   .bar-chart .bar{flex:0 0 auto !important;width:100%;min-width:0}
 </style>
+<script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.1/build/qrcode.min.js"></script>
+<style id="pick-css">
+/* ===== T-3 피킹 리스트 이식 CSS (스코프: #scr-picking / .pick-modal) ===== */
+#scr-picking, .pick-modal{
+  --ink:#1b2430; --muted:#5c6672; --faint:#8a929c;
+  --line:#e4e8ee; --bg:#f4f6f9; --card:#ffffff;
+  --accent:#2563a8; --accent-bg:#e8f0fa;
+  --warn:#c07a12; --warn-bg:#fbf1df;
+  --danger:#b23b30; --danger-bg:#fbeae7;
+  --ok:#2c7a54; --ok-bg:#e6f3ec;
+  --shadow:0 1px 2px rgba(24,36,54,.05), 0 1px 3px rgba(24,36,54,.04);
+  font-family:"Pretendard","Malgun Gothic","맑은 고딕",-apple-system,sans-serif;
+  color:var(--ink); font-size:14px; line-height:1.5;
+}
+#scr-picking *, .pick-modal *{box-sizing:border-box}
+#scr-picking .tnum, .pick-modal .tnum{font-variant-numeric:tabular-nums}
+#scr-picking .wrap{max-width:1100px; margin:0 auto; padding:20px 22px 60px}
+/* 통합본 전역 .bar(차트용) 침범 리셋 포함 */
+#scr-picking .bar{background:transparent;border-radius:0;position:static;flex:none;min-width:0;display:flex; align-items:center; justify-content:space-between; gap:16px; flex-wrap:wrap; margin-bottom:16px}
+#scr-picking .bar span{position:static;transform:none;left:auto;top:auto;white-space:normal;font-size:inherit;color:inherit}
+#scr-picking .bar h1{font-size:18px; font-weight:600; margin:0}
+#scr-picking .bar .sub{font-size:12.5px; color:var(--muted); margin-top:2px}
+#scr-picking .stats{display:flex; gap:8px; flex-wrap:wrap; align-items:center}
+#scr-picking .stat{background:var(--card); border:1px solid var(--line); border-radius:9px; padding:6px 12px; text-align:center; box-shadow:var(--shadow)}
+#scr-picking .stat b{font-size:16px; font-weight:600; display:block; line-height:1.2}
+#scr-picking .stat span{font-size:11px; color:var(--muted)}
+#scr-picking button, .pick-modal button{font-family:inherit; font-size:13px; cursor:pointer; border-radius:8px; border:1px solid var(--line); background:var(--card); color:var(--ink); padding:8px 13px; box-shadow:var(--shadow); transition:.12s}
+#scr-picking button:hover, .pick-modal button:hover{border-color:#cdd4dd; background:#fbfcfd}
+#scr-picking button.primary, .pick-modal button.primary{background:var(--accent); border-color:var(--accent); color:#fff}
+#scr-picking button.primary:hover, .pick-modal button.primary:hover{background:#1f568f}
+#scr-picking .progress{background:var(--card); border:1px solid var(--line); border-radius:12px; padding:14px 18px; margin-bottom:16px; box-shadow:var(--shadow)}
+#scr-picking .progress-h{display:flex; justify-content:space-between; align-items:baseline; margin-bottom:8px}
+#scr-picking .progress-h b{font-size:15px; font-weight:600}
+#scr-picking .progress-h span{font-size:12px; color:var(--muted)}
+#scr-picking .progress-bar{height:9px; background:#eceff3; border-radius:5px; overflow:hidden}
+#scr-picking .progress-bar > i{display:block; height:100%; background:var(--ok); transition:width .3s}
+#scr-picking .pick-list{display:flex; flex-direction:column; gap:8px}
+#scr-picking .pick{display:grid; grid-template-columns:44px 1fr auto auto; align-items:center; gap:14px; background:var(--card); border:1px solid var(--line); border-radius:11px; padding:12px 16px; box-shadow:var(--shadow); transition:.12s}
+#scr-picking .pick.done{opacity:.55; background:var(--ok-bg); border-color:#c3e2d1}
+#scr-picking .pick.done .p-main b{text-decoration:line-through}
+#scr-picking .pick-chk{width:32px; height:32px; border:2px solid var(--faint); border-radius:8px; display:flex; align-items:center; justify-content:center; cursor:pointer; font-size:18px; color:transparent; transition:.15s}
+#scr-picking .pick-chk:hover{border-color:var(--accent); background:var(--accent-bg)}
+#scr-picking .pick.done .pick-chk{background:var(--ok); border-color:var(--ok); color:#fff}
+#scr-picking .p-main b{font-size:14.5px; font-weight:600}
+#scr-picking .p-main .p-sub{font-size:12px; color:var(--muted); margin-top:2px}
+#scr-picking .p-main .p-note{font-size:11.5px; color:var(--danger); background:var(--danger-bg); border-radius:6px; padding:3px 7px; margin-top:5px; display:inline-block}
+#scr-picking .p-loc{font-size:12px; font-weight:600; padding:4px 10px; border-radius:9px; white-space:nowrap}
+#scr-picking .loc-wh{background:var(--ok-bg); color:var(--ok)}
+#scr-picking .loc-wip{background:var(--warn-bg); color:var(--warn)}
+#scr-picking .loc-part{background:var(--accent-bg); color:var(--accent)}
+#scr-picking .p-actions{display:flex; gap:6px}
+#scr-picking .p-actions button{padding:6px 10px; font-size:12px}
+/* 피킹 모달 */
+.pick-modal{display:none; position:fixed; inset:0; background:rgba(20,28,42,.45); z-index:10005; align-items:center; justify-content:center; padding:20px}
+.pick-modal.show{display:flex}
+.pick-modal .modal-box{background:#fff; border-radius:14px; width:min(360px,92vw); padding:22px; box-shadow:0 12px 40px rgba(20,28,42,.25); text-align:center}
+.pick-modal .modal-h{display:flex; justify-content:space-between; align-items:center; margin-bottom:14px}
+.pick-modal .modal-h b{font-size:15px; font-weight:600}
+.pick-modal .modal-x{cursor:pointer; color:var(--faint); font-size:14px}
+#pick-qrCanvas{margin:0 auto; display:block; border:1px solid var(--line); border-radius:8px; padding:12px; background:#fff}
+.pick-modal .qr-info{margin-top:14px; text-align:left; font-size:13px}
+.pick-modal .qr-info .qi-cust{font-size:15px; font-weight:600; margin-bottom:2px}
+.pick-modal .qr-info .qi-sub{font-size:12px; color:var(--muted)}
+.pick-modal .qr-code{font-family:monospace; font-size:11px; color:var(--muted); margin-top:8px; background:#f4f6f9; border-radius:6px; padding:6px 8px; word-break:break-all}
+.pick-modal .scan-box{background:#fff; border-radius:14px; width:min(340px,92vw); padding:22px; text-align:center}
+.pick-modal .scan-cam{width:100%; height:180px; background:#1b2430; border-radius:10px; display:flex; align-items:center; justify-content:center; color:#fff; font-size:14px; margin-bottom:14px; position:relative; overflow:hidden}
+.pick-modal .scan-cam::before{content:''; position:absolute; inset:20% 20%; border:2px dashed rgba(255,255,255,.5); border-radius:8px}
+.pick-modal .scan-cam::after{content:''; position:absolute; left:20%; right:20%; top:50%; height:2px; background:var(--accent); animation:pickScan 1.4s ease-in-out infinite alternate}
+@keyframes pickScan{from{top:22%}to{top:78%}}
+.pick-modal .scan-hint{font-size:12px; color:var(--muted); margin-bottom:12px}
+</style>
+<style id="disp-css">
+/* ===== T-2 배차 보드 이식 CSS (스코프: #scr-dispatch / .disp-modal) ===== */
+#scr-dispatch, .disp-modal{
+  --ink:#1b2430; --muted:#5c6672; --faint:#8a929c;
+  --line:#e4e8ee; --line2:#eef1f5; --bg:#f4f6f9; --card:#ffffff;
+  --accent:#2563a8; --accent-bg:#e8f0fa;
+  --warn:#c07a12; --warn-bg:#fbf1df;
+  --danger:#b23b30; --danger-bg:#fbeae7;
+  --ok:#2c7a54; --ok-bg:#e6f3ec;
+  --shadow:0 1px 2px rgba(24,36,54,.05), 0 1px 3px rgba(24,36,54,.04);
+  font-family:"Pretendard","Malgun Gothic","맑은 고딕",-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
+  color:var(--ink); font-size:14px; line-height:1.5;
+}
+#scr-dispatch *, .disp-modal *{box-sizing:border-box}
+/* 통합본 전역 .bar(차트용) 스타일 침범 리셋 */
+#scr-dispatch .bar{background:transparent;border-radius:0;position:static;flex:none;min-width:0}
+#scr-dispatch .bar span{position:static;transform:none;left:auto;top:auto;white-space:normal;font-size:inherit;color:inherit}
+#scr-dispatch .tnum, .disp-modal .tnum{font-variant-numeric:tabular-nums}
+#scr-dispatch .wrap{max-width:1220px; margin:0 auto; padding:20px 22px 60px}
+#scr-dispatch .bar{display:flex; align-items:center; justify-content:space-between; gap:16px; flex-wrap:wrap; margin-bottom:16px}
+#scr-dispatch .bar h1{font-size:18px; font-weight:600; margin:0; letter-spacing:-.01em}
+#scr-dispatch .bar .sub{font-size:12.5px; color:var(--muted); margin-top:2px}
+#scr-dispatch .bar-actions{display:flex; align-items:center; gap:8px; flex-wrap:wrap}
+#scr-dispatch .stat{background:var(--card); border:1px solid var(--line); border-radius:9px; padding:6px 12px; text-align:center; box-shadow:var(--shadow)}
+#scr-dispatch .stat b{font-size:16px; font-weight:600; display:block; line-height:1.2}
+#scr-dispatch .stat span{font-size:11px; color:var(--muted)}
+#scr-dispatch button, .disp-modal button{font-family:inherit; font-size:13px; cursor:pointer; border-radius:8px; border:1px solid var(--line); background:var(--card); color:var(--ink); padding:8px 13px; box-shadow:var(--shadow); transition:.12s}
+#scr-dispatch button:hover, .disp-modal button:hover{border-color:#cdd4dd; background:#fbfcfd}
+#scr-dispatch button:active, .disp-modal button:active{transform:scale(.985)}
+#scr-dispatch button.primary, .disp-modal button.primary{background:var(--accent); border-color:var(--accent); color:#fff}
+#scr-dispatch button.primary:hover, .disp-modal button.primary:hover{background:#1f568f}
+#scr-dispatch button.ghost, .disp-modal button.ghost{box-shadow:none; background:transparent; border-color:var(--line)}
+#scr-dispatch .rules{background:var(--card); border:1px solid var(--line); border-radius:11px; padding:12px 14px; margin-bottom:18px; box-shadow:var(--shadow)}
+#scr-dispatch .rules-head{display:flex; align-items:center; gap:7px; font-size:12px; font-weight:600; color:var(--muted); text-transform:uppercase; letter-spacing:.04em; margin-bottom:10px}
+#scr-dispatch .chips{display:flex; flex-wrap:wrap; gap:8px; align-items:center}
+#scr-dispatch .chip{display:inline-flex; align-items:center; gap:6px; font-size:12.5px; padding:6px 11px; border-radius:20px; border:1px solid var(--line); background:#fff; color:var(--muted); cursor:pointer; user-select:none; transition:.12s}
+#scr-dispatch .chip.on{background:var(--accent-bg); border-color:#bcd3ee; color:var(--accent); font-weight:500}
+#scr-dispatch .chip .dot{width:7px; height:7px; border-radius:50%; background:#cfd6df}
+#scr-dispatch .chip.on .dot{background:var(--accent)}
+#scr-dispatch .chip.add{border-style:dashed; color:var(--faint)}
+#scr-dispatch .rule-input{display:none; align-items:center; gap:6px; margin-top:10px}
+#scr-dispatch .rule-input.show{display:flex}
+#scr-dispatch .rule-input input{font-family:inherit; font-size:13px; border:1px solid var(--line); border-radius:7px; padding:7px 10px; width:230px; outline:none}
+#scr-dispatch .rule-input input:focus{border-color:var(--accent)}
+#scr-dispatch .board{display:grid; grid-template-columns:300px 1fr; gap:16px; align-items:start}
+@media(max-width:820px){#scr-dispatch .board{grid-template-columns:1fr}}
+#scr-dispatch .col-head{display:flex; align-items:center; justify-content:space-between; margin-bottom:9px}
+#scr-dispatch .col-head .t{font-size:13px; font-weight:600}
+#scr-dispatch .col-head .c{font-size:12px; color:var(--faint)}
+#scr-dispatch .lane{background:#eff2f6; border:1px solid var(--line); border-radius:12px; padding:10px; min-height:70px; transition:.12s}
+#scr-dispatch .lane.pool{background:#edf0f4; min-height:200px; display:flex; flex-direction:column; gap:7px}
+#scr-dispatch .lane.over{background:var(--accent-bg); border-color:#bcd3ee}
+#scr-dispatch .trucks{display:grid; grid-template-columns:repeat(2,1fr); gap:14px}
+@media(max-width:560px){#scr-dispatch .trucks{grid-template-columns:1fr}}
+#scr-dispatch .truck{background:var(--card); border:1px solid var(--line); border-radius:13px; padding:13px; box-shadow:var(--shadow); transition:.12s}
+#scr-dispatch .truck.over{border-color:var(--accent); box-shadow:0 0 0 3px var(--accent-bg)}
+#scr-dispatch .truck-head{display:flex; align-items:baseline; justify-content:space-between; gap:8px}
+#scr-dispatch .truck-head .name{font-size:14px; font-weight:600}
+#scr-dispatch .truck-head .home{font-size:11.5px; color:var(--faint)}
+#scr-dispatch .gauge{height:7px; border-radius:4px; background:#eceff3; overflow:hidden; margin:9px 0 4px}
+#scr-dispatch .gauge > i{display:block; height:100%; background:var(--accent); border-radius:4px; transition:width .3s, background .2s}
+#scr-dispatch .load{display:flex; justify-content:space-between; font-size:11.5px; color:var(--muted); margin-bottom:9px}
+#scr-dispatch .route{font-size:11px;color:var(--muted);background:#f4f6f9;border-radius:6px;padding:5px 8px;margin-bottom:9px}
+#scr-dispatch .route b{color:var(--ink);font-weight:600}
+#scr-dispatch .drop-slot{min-height:34px; display:flex; flex-direction:column; gap:7px}
+#scr-dispatch .drop-hint{font-size:11.5px; color:var(--faint); text-align:center; padding:8px 0}
+#scr-dispatch .ord{background:#fff; border:1px solid var(--line); border-radius:9px; padding:8px 10px; cursor:grab; box-shadow:var(--shadow); position:relative; transition:.1s}
+#scr-dispatch .ord:hover{border-color:#cdd4dd}
+#scr-dispatch .ord.dragging{opacity:.4}
+#scr-dispatch .ord.urgent{border-color:#e6b6ae; background:var(--danger-bg)}
+#scr-dispatch .ord-top{display:flex; align-items:center; justify-content:space-between; gap:6px; padding-right:0}
+#scr-dispatch .ord .cust{font-size:13px; font-weight:600; letter-spacing:-.01em}
+#scr-dispatch .ord .to{font-size:11px; color:var(--accent); margin-top:1px}
+#scr-dispatch .ord .item{font-size:11.5px; color:var(--muted); margin-top:2px}
+#scr-dispatch .ord .meta{font-size:11px; color:var(--faint); margin-top:4px}
+#scr-dispatch .ord .meta b{color:var(--muted); font-weight:600}
+#scr-dispatch .ord .tags{margin-top:6px; display:flex; flex-wrap:wrap; gap:4px; align-items:center}
+#scr-dispatch .seq{flex:none; width:19px; height:19px; border-radius:50%; background:var(--accent); color:#fff; font-size:11px; font-weight:600; display:flex; align-items:center; justify-content:center}
+#scr-dispatch .badge{font-size:10.5px; font-weight:600; padding:1px 7px; border-radius:11px}
+#scr-dispatch .badge.zone{background:#eef1f5; color:var(--muted)}
+#scr-dispatch .badge.warn{background:var(--warn-bg);color:var(--warn)}
+#scr-dispatch .badge.urg{background:var(--danger); color:#fff}
+#scr-dispatch .badge.pickup{background:#efe6fb;color:#6b3fb5}
+#scr-dispatch .loc-badge{font-size:10.5px; font-weight:600; padding:1px 8px; border-radius:11px; cursor:pointer}
+#scr-dispatch .chip-note{font-size:10px; font-weight:600; color:var(--danger); background:var(--danger-bg); padding:1px 7px; border-radius:9px}
+#scr-dispatch .ord-note{font-size:11px; color:var(--danger); background:var(--danger-bg); border-radius:6px; padding:3px 7px; margin-top:5px; line-height:1.35}
+#scr-dispatch .chip-done{font-size:10px; font-weight:600; color:var(--ok); background:var(--ok-bg); padding:1px 7px; border-radius:9px}
+#scr-dispatch .special{display:grid; grid-template-columns:repeat(3,1fr); gap:14px; margin-top:16px}
+@media(max-width:560px){#scr-dispatch .special{grid-template-columns:1fr}}
+#scr-dispatch .slane{background:var(--card); border:1px solid var(--line); border-radius:13px; padding:12px; box-shadow:var(--shadow); transition:.12s}
+#scr-dispatch .slane.over{border-color:var(--accent); box-shadow:0 0 0 3px var(--accent-bg)}
+#scr-dispatch .slane-head{display:flex; align-items:center; gap:7px; font-size:13px; font-weight:600; margin-bottom:2px}
+#scr-dispatch .slane-head .ico{width:22px;height:22px;border-radius:6px;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700}
+#scr-dispatch .i-parcel{background:var(--accent-bg);color:var(--accent)}
+#scr-dispatch .i-charter{background:var(--warn-bg);color:var(--warn)}
+#scr-dispatch .i-direct{background:var(--danger-bg);color:var(--danger)}
+#scr-dispatch .slane .desc{font-size:11.5px; color:var(--faint); margin-bottom:9px}
+#scr-dispatch .foot{margin-top:26px; font-size:11.5px; color:var(--faint); line-height:1.7; border-top:1px solid var(--line); padding-top:14px}
+#scr-dispatch .foot code{background:#eceff3; padding:1px 5px; border-radius:4px; font-size:11px}
+.disp-modal{display:none; position:fixed; inset:0; background:rgba(20,28,42,.45); z-index:10005; align-items:center; justify-content:center; padding:24px}
+.disp-modal.show{display:flex}
+.disp-modal.top{align-items:flex-start; overflow:auto}
+.disp-modal .cmp-box{background:#fff; border-radius:14px; width:min(420px,92vw); padding:18px 20px; box-shadow:0 12px 40px rgba(20,28,42,.25)}
+.disp-modal .cmp-head{display:flex; justify-content:space-between; align-items:center; font-size:15px; font-weight:600; margin-bottom:14px}
+.disp-modal .cmp-x{cursor:pointer; color:var(--faint); font-size:14px}
+.disp-modal .cmp-x:hover{color:var(--ink)}
+.disp-modal .cmp-order{font-size:13px; margin-bottom:12px; padding-bottom:12px; border-bottom:1px solid var(--line)}
+.disp-modal .cmp-sub{color:var(--muted); font-size:12px}
+.disp-modal .cmp-row{display:flex; align-items:center; gap:10px; padding:10px; border:1px solid var(--line); border-radius:9px; margin-bottom:8px}
+.disp-modal .cmp-row.best{border-color:#bcd3ee; background:var(--accent-bg)}
+.disp-modal .cmp-l{flex:1}
+.disp-modal .cmp-l b{font-size:13.5px}
+.disp-modal .cmp-tag{font-size:10.5px; font-weight:600; color:#fff; background:var(--accent); border-radius:10px; padding:1px 7px; margin-left:6px}
+.disp-modal .cmp-note{font-size:11.5px; color:var(--muted); margin-top:2px}
+.disp-modal .cmp-cost{font-size:14px; font-weight:600; min-width:78px; text-align:right}
+.disp-modal .cmp-pick{font-size:12px; padding:6px 10px; white-space:nowrap}
+.disp-modal .cmp-pick:disabled{opacity:.4; cursor:not-allowed}
+.disp-modal .cmp-rule{display:flex; gap:6px; margin-top:12px; padding-top:12px; border-top:1px solid var(--line)}
+.disp-modal .cmp-rule input{flex:1; font-family:inherit; font-size:12.5px; border:1px solid var(--line); border-radius:7px; padding:7px 9px; outline:none}
+.disp-modal .cmp-rule input:focus{border-color:var(--accent)}
+.disp-modal .det-box{background:#fff; border-radius:14px; width:min(460px,92vw); box-shadow:0 12px 40px rgba(20,28,42,.25); overflow:hidden}
+.disp-modal .det-head{padding:16px 20px 14px; border-bottom:1px solid var(--line)}
+.disp-modal .det-head .dc{display:flex; justify-content:space-between; align-items:flex-start; gap:10px}
+.disp-modal .det-head h3{margin:0; font-size:17px; font-weight:600}
+.disp-modal .det-head .dsub{font-size:12.5px; color:var(--accent); margin-top:3px}
+.disp-modal .det-x{cursor:pointer; color:var(--faint); font-size:15px}
+.disp-modal .det-x:hover{color:var(--ink)}
+.disp-modal .det-box-badge{display:inline-flex; align-items:baseline; gap:5px; margin-top:12px; background:var(--accent-bg); color:var(--accent); border-radius:9px; padding:8px 14px}
+.disp-modal .det-box-badge b{font-size:24px; font-weight:700; line-height:1}
+.disp-modal .det-box-badge span{font-size:12px; font-weight:600}
+.disp-modal .det-note{margin:12px 0 0; padding:9px 12px; background:var(--danger-bg); color:var(--danger); border-radius:9px; font-size:12.5px; font-weight:500}
+.disp-modal .det-grid{padding:16px 20px 20px; display:grid; grid-template-columns:auto 1fr; gap:9px 16px; font-size:13.5px}
+.disp-modal .det-grid dt{color:var(--muted)}
+.disp-modal .det-grid dd{margin:0; text-align:right; font-weight:500}
+.disp-modal .one-box{background:#fff; border-radius:14px; width:min(460px,94vw); box-shadow:0 12px 40px rgba(20,28,42,.25); overflow:hidden; max-height:88vh; display:flex; flex-direction:column}
+.disp-modal .one-head{padding:16px 20px 14px; border-bottom:1px solid var(--line)}
+.disp-modal .one-title{display:flex; justify-content:space-between; align-items:flex-start; gap:10px}
+.disp-modal .one-title h3{margin:0; font-size:17px; font-weight:600}
+.disp-modal .one-sub{font-size:12.5px; color:var(--muted); margin-top:3px}
+.disp-modal .one-x{cursor:pointer; color:var(--faint); font-size:15px; line-height:1}
+.disp-modal .one-x:hover{color:var(--ink)}
+.disp-modal .one-badges{display:flex; gap:6px; margin-top:10px; flex-wrap:wrap}
+.disp-modal .one-badges span{font-size:11px; font-weight:600; padding:3px 9px; border-radius:9px}
+.disp-modal .one-boxbadge{display:inline-flex; align-items:baseline; gap:5px; background:var(--accent-bg); color:var(--accent); border-radius:9px; padding:6px 12px}
+.disp-modal .one-boxbadge b{font-size:22px; font-weight:700; line-height:1}
+.disp-modal .one-boxbadge span{font-size:11.5px; font-weight:600}
+.disp-modal .one-scroll{overflow:auto; padding:16px 20px 18px}
+.disp-modal .one-sec{font-size:11.5px; font-weight:600; color:var(--muted); letter-spacing:.04em; text-transform:uppercase; margin:14px 0 8px}
+.disp-modal .one-sec:first-child{margin-top:0}
+.disp-modal .one-grid{display:grid; grid-template-columns:auto 1fr; gap:7px 14px; font-size:13px}
+.disp-modal .one-grid dt{color:var(--muted)}
+.disp-modal .one-grid dd{margin:0; text-align:right; font-weight:500}
+.disp-modal .one-note{font-size:12.5px; color:var(--danger); background:var(--danger-bg); border-radius:8px; padding:9px 12px; margin-top:8px; line-height:1.4}
+.disp-modal .one-cost-row{display:flex; align-items:center; gap:8px; padding:9px 12px; border:1px solid var(--line); border-radius:9px; margin-bottom:6px}
+.disp-modal .one-cost-row.best{border-color:#bcd3ee; background:var(--accent-bg)}
+.disp-modal .one-cost-row.current{border-color:var(--ok); background:var(--ok-bg)}
+.disp-modal .one-cost-row .lbl{flex:1; font-weight:600; font-size:13px}
+.disp-modal .one-cost-row .lbl .tag{font-size:10.5px; font-weight:600; margin-left:6px; padding:1px 6px; border-radius:9px}
+.disp-modal .one-cost-row .lbl .tag.rec{background:var(--accent); color:#fff}
+.disp-modal .one-cost-row .lbl .tag.now{background:var(--ok); color:#fff}
+.disp-modal .one-cost-row .lbl .sub{font-size:11px; color:var(--muted); font-weight:400; margin-top:1px}
+.disp-modal .one-cost-row .cost{font-size:13.5px; font-weight:600; min-width:72px; text-align:right}
+.disp-modal .one-foot{padding:12px 20px; border-top:1px solid var(--line); background:#f9fafc; display:flex; gap:8px; flex-wrap:wrap; align-items:center; justify-content:space-between}
+.disp-modal .one-foot .left{display:flex; gap:8px}
+.disp-modal .one-foot .right{display:flex; gap:6px; flex-wrap:wrap}
+.disp-modal .one-foot button{font-size:12.5px; padding:7px 11px}
+.disp-modal .one-assign{font-size:12.5px; padding:7px 11px; border-radius:7px; border:1px solid var(--line); background:#fff; cursor:pointer}
+.disp-modal .one-assign:hover{border-color:#cdd4dd}
+.disp-modal .one-assign.on{background:var(--accent); border-color:var(--accent); color:#fff}
+.disp-modal .one-truckpick{display:flex; gap:5px; flex-wrap:wrap; margin-top:6px}
+.disp-modal .one-truckpick button{font-size:11.5px; padding:5px 9px}
+.disp-modal .one-urgbtn.on{background:var(--danger); border-color:var(--danger); color:#fff}
+.disp-modal .out-box{background:#fff; border-radius:14px; width:min(860px,96vw); box-shadow:0 12px 40px rgba(20,28,42,.25)}
+.disp-modal .out-head{display:flex; justify-content:space-between; align-items:center; padding:18px 22px 14px; border-bottom:1px solid var(--line)}
+.disp-modal .out-head .oh-t{font-size:16px; font-weight:600}
+.disp-modal .out-head .oh-t span{font-size:12px; color:var(--muted); font-weight:400; margin-left:8px}
+.disp-modal .out-tabs{display:flex; gap:6px; padding:12px 22px 0}
+.disp-modal .out-tab{font-size:13px; font-weight:600; padding:8px 14px; border-radius:8px 8px 0 0; cursor:pointer; color:var(--muted); border:1px solid transparent; border-bottom:none}
+.disp-modal .out-tab.on{color:var(--accent); background:var(--accent-bg); border-color:#cfe0f3}
+.disp-modal .out-body{padding:16px 22px 22px; max-height:70vh; overflow:auto}
+.disp-modal .out-empty{font-size:13px; color:var(--muted); padding:16px 2px}
+.disp-modal .wi{border:1.5px solid var(--ink); border-radius:10px; margin-bottom:16px; overflow:hidden}
+.disp-modal .wi-top{display:flex; justify-content:space-between; align-items:center; background:var(--ink); color:#fff; padding:10px 16px}
+.disp-modal .wi-top .wi-truck{font-size:17px; font-weight:700}
+.disp-modal .wi-top .wi-driver{font-size:13px; opacity:.85; margin-left:8px; font-weight:400}
+.disp-modal .wi-top .wi-sum{font-size:12px; text-align:right; opacity:.9; line-height:1.5}
+.disp-modal .wi-tbl{width:100%; border-collapse:collapse}
+.disp-modal .wi-tbl th{font-size:12px; color:var(--muted); font-weight:600; background:#f4f6f9; border-bottom:1.5px solid var(--line); padding:8px 10px; text-align:left}
+.disp-modal .wi-tbl td{border-bottom:1px solid var(--line); padding:11px 10px; vertical-align:middle}
+.disp-modal .wi-tbl tr:last-child td{border-bottom:none}
+.disp-modal .wi-seq{width:34px; text-align:center; font-size:16px; font-weight:700; color:var(--accent)}
+.disp-modal .wi-cust{font-size:14.5px; font-weight:600}
+.disp-modal .wi-to{font-size:12px; color:var(--muted); margin-top:2px}
+.disp-modal .wi-note{color:var(--danger); font-size:12px; font-weight:600; margin-top:3px}
+.disp-modal .wi-item{font-size:12.5px; color:var(--ink)}
+.disp-modal .wi-box{text-align:center; white-space:nowrap}
+.disp-modal .wi-box b{font-size:20px; font-weight:700}
+.disp-modal .wi-box span{font-size:11px; color:var(--muted); display:block}
+.disp-modal .wi-kg{text-align:right; font-size:12.5px; color:var(--muted); white-space:nowrap}
+.disp-modal .wi-chk{width:34px; text-align:center; font-size:19px; color:var(--faint)}
+.disp-modal .wi-loc{display:inline-block; font-size:10.5px; font-weight:600; padding:1px 7px; border-radius:9px; margin-left:6px}
+.disp-modal .wi-pickup{display:inline-block; font-size:10.5px; font-weight:600; padding:1px 7px; border-radius:9px; margin-left:6px; background:#efe6fb; color:#6b3fb5}
+.disp-modal .pc-tbl{width:100%; border-collapse:collapse; font-size:13px}
+.disp-modal .pc-tbl th{font-size:12px; color:var(--muted); font-weight:600; background:#f4f6f9; border-bottom:1.5px solid var(--line); padding:9px 10px; text-align:left}
+.disp-modal .pc-tbl td{border-bottom:1px solid var(--line); padding:10px}
+.disp-modal .pc-tbl .num{text-align:right; white-space:nowrap}
+.disp-modal .etc-line{font-size:13px; color:var(--muted); padding:6px 2px}
+/* 인쇄: dispPrintOut()이 body에 disp-printing을 켰을 때만 산출물만 출력 */
+@media print{
+  body.disp-printing *{visibility:hidden}
+  body.disp-printing #disp-outModal, body.disp-printing #disp-outModal *{visibility:visible}
+  body.disp-printing #disp-outModal{position:absolute; inset:0; background:#fff; padding:0; display:block; overflow:visible; z-index:99999}
+  body.disp-printing #disp-outModal .out-box{box-shadow:none; width:100%; border-radius:0; max-height:none}
+  body.disp-printing #disp-outModal .out-body{max-height:none; overflow:visible}
+  body.disp-printing #disp-outModal .no-print{display:none !important}
+  body.disp-printing #disp-outModal .wi{break-inside:avoid}
+}
+</style>
 </head>
 <body>
 
@@ -1296,6 +1585,8 @@ select.form-control { cursor: pointer; }
                 <div style="display:flex;flex-direction:column;gap:3px"><label style="font-size:11px;color:#666;font-weight:600">가용재고</label><input id="spAvail" readonly style="width:90px;border:1px solid #ddd;border-radius:6px;padding:6px 8px;font-size:12px;background:#f1f1f1;text-align:right"></div>
                 <div style="display:flex;flex-direction:column;gap:3px"><label style="font-size:11px;color:#666;font-weight:600">출고수량</label><input id="spQty" type="number" placeholder="0" style="width:100px;border:1px solid #ddd;border-radius:6px;padding:6px 8px;font-size:12px;text-align:right"></div>
                 <div style="display:flex;flex-direction:column;gap:3px"><label style="font-size:11px;color:#666;font-weight:600">출고예정일</label><input id="spDate" type="date" value="2026-07-05" style="width:150px;border:1px solid #ddd;border-radius:6px;padding:6px 8px;font-size:12px"></div>
+                <div style="display:flex;flex-direction:column;gap:3px"><label style="font-size:11px;color:#666;font-weight:600">출고 타입</label><select id="spType" style="width:120px;border:1px solid #ddd;border-radius:6px;padding:6px 8px;font-size:12px"><option value="deliver" selected>배송</option><option value="pickup">픽업(회수)</option><option value="sample">샘플 전달</option><option value="return">자재 회수</option><option value="parcel">택배 지정</option><option value="direct-ship">업체 직발송</option></select></div>
+                <div style="display:flex;flex-direction:column;gap:3px"><label style="font-size:11px;color:#666;font-weight:600">특이지시 (선택)</label><input id="spNote" placeholder="예: 납품후 사장님께 전화" style="width:190px;border:1px solid #ddd;border-radius:6px;padding:6px 8px;font-size:12px"></div>
                 <button onclick="spRegister()" style="background:#FF6B35;color:#fff;border:none;border-radius:6px;padding:8px 14px;font-size:12px;font-weight:bold;cursor:pointer">＋ 출고계획 등록</button>
               </div>
               <table class="grid"><thead><tr><th>계획번호</th><th>거래처</th><th>품목</th><th class="text-right">출고예정수량</th><th>출고예정일</th><th>상태</th></tr></thead><tbody id="shipPlanBody"></tbody></table>
@@ -1349,26 +1640,107 @@ select.form-control { cursor: pointer; }
         </div>
       </div><!-- /scr-shipsched -->
 
-      <!-- 배차 보드 (T-2에서 이식) -->
+      <!-- 배차 보드 (T-2 이식 완료) -->
       <div class="screen" id="scr-dispatch">
-        <div style="padding:20px;background:#fff;border-radius:10px;border:1px solid #e0e0e0">
-          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
-            <span style="font-size:15px;font-weight:bold;color:#222">🚛 배차 보드</span>
-            <span style="background:#FF6B35;color:#fff;font-size:11px;border-radius:10px;padding:1px 9px;font-weight:bold">신규 (이식 대기)</span>
-          </div>
-          <div style="font-size:12px;color:#777">이 화면에 배차 데모를 이식할 예정. T-2에서 실제 코드 삽입.</div>
+<div class="wrap">
+
+  <div class="bar">
+    <div>
+      <h1>물류 자동 배차 보드</h1>
+      <div class="sub">엘앤피 · 지입차 4대 · <span id="disp-today"></span></div>
+    </div>
+    <div class="bar-actions">
+      <div class="stat"><b class="tnum" id="disp-s-total">0</b><span>출하 대상</span></div>
+      <div class="stat"><b class="tnum" id="disp-s-done">0</b><span>배차 완료</span></div>
+      <div class="stat"><b class="tnum" id="disp-s-pool">0</b><span>미배차</span></div>
+      <div class="stat"><b class="tnum" id="disp-s-ready">0</b><span>출고가능</span></div>
+      <button onclick="selectMenu(document.querySelector('.menu-item[onclick*=picking]'),'picking')" style="border-color:#c3e2d1;background:#e6f3ec;color:#2c7a54;font-weight:600">📦 피킹 리스트</button>
+      <button class="ghost" onclick="dispReset()">초기화</button>
+      <button class="primary" onclick="dispAuto()">⚡ 자동 배차 초안</button>
+      <button class="primary" onclick="dispConfirm()" style="background:var(--ok);border-color:var(--ok)">✓ 배차 확정</button>
+    </div>
+  </div>
+
+  <div class="rules">
+    <div class="rules-head">배차 규칙 · 회의 중 추가한 노하우가 그대로 명세가 됩니다</div>
+    <div class="chips" id="disp-chips"></div>
+    <div class="rule-input" id="disp-ruleInput">
+      <input id="disp-ruleText" placeholder="예: 콜마는 오후 배송만 가능" onkeydown="if(event.key==='Enter')dispCommitRule()">
+      <button onclick="dispCommitRule()">추가</button>
+      <button class="ghost" onclick="dispHideRuleInput()">취소</button>
+    </div>
+  </div>
+
+  <div class="board">
+    <div>
+      <div class="col-head"><span class="t">미배차 풀</span><span class="c" id="disp-pool-c">0건</span></div>
+      <div class="lane pool" data-lane="pool" id="disp-lane-pool"></div>
+    </div>
+    <div>
+      <div class="col-head"><span class="t">지입 차량</span><span class="c">적재 한도 1.2톤 · 번호=배송순서(마지막이 퇴근권역)</span></div>
+      <div class="trucks" id="disp-trucks"></div>
+      <div class="special">
+        <div class="slane" data-lane="parcel" id="disp-lane-parcel">
+          <div class="slane-head"><span class="ico i-parcel">택</span>택배</div>
+          <div class="desc">소량·원거리 · 시트 자동 생성</div>
+          <div class="drop-slot" id="disp-slot-parcel"></div>
         </div>
+        <div class="slane" data-lane="charter" id="disp-lane-charter">
+          <div class="slane-head"><span class="ico i-charter">용</span>용차</div>
+          <div class="desc">대량·초과분 · 비용비교 추천</div>
+          <div class="drop-slot" id="disp-slot-charter"></div>
+        </div>
+        <div class="slane" data-lane="direct" id="disp-lane-direct">
+          <div class="slane-head"><span class="ico i-direct">직</span>직접납품</div>
+          <div class="desc">긴급 건 · 담당자 직접</div>
+          <div class="drop-slot" id="disp-slot-direct"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="foot">
+    ※ 데이터는 2026-07-08 출하계획서에서 대표 15건을 뽑은 것이며, 무게·부피·박스수는 <b>임시값</b>입니다. 실제 값 나오면 <code>DISP_ORDERS</code> 배열만 교체하세요.<br>
+    ※ 특이지시(전화·통화·안심배송 등)는 담당자 노하우입니다. 회의에서 나오는 케이스를 규칙 패널에 계속 추가하세요.
+  </div>
+
+
+
+
+
+
+
+
+
+</div>
       </div><!-- /scr-dispatch -->
 
-      <!-- 피킹 리스트 (T-3에서 이식) -->
+      <!-- 피킹 리스트 (T-3 이식 완료) -->
       <div class="screen" id="scr-picking">
-        <div style="padding:20px;background:#fff;border-radius:10px;border:1px solid #e0e0e0">
-          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
-            <span style="font-size:15px;font-weight:bold;color:#222">📋 피킹 리스트</span>
-            <span style="background:#FF6B35;color:#fff;font-size:11px;border-radius:10px;padding:1px 9px;font-weight:bold">신규 (이식 대기)</span>
-          </div>
-          <div style="font-size:12px;color:#777">이 화면에 피킹 리스트(QR 포함)를 이식할 예정. T-3에서 실제 코드 삽입.</div>
-        </div>
+<div class="wrap">
+
+  <div class="bar">
+    <div>
+      <h1>피킹 리스트 · 익일 출하 준비</h1>
+      <div class="sub" id="pick-today"></div>
+      <div style="margin-top:6px"><button onclick="selectMenu(document.querySelector('.menu-item[onclick*=dispatch]'),'dispatch')" style="font-size:12px">← 배차 보드로</button></div>
+    </div>
+    <div class="stats">
+      <div class="stat"><b class="tnum" id="pick-s-total">0</b><span>대상</span></div>
+      <div class="stat"><b class="tnum" id="pick-s-done">0</b><span>준비완료</span></div>
+      <div class="stat"><b class="tnum" id="pick-s-wait">0</b><span>대기</span></div>
+      <button class="primary" onclick="pickOpenScan()">📷 QR 스캔</button>
+    </div>
+  </div>
+
+  <div class="progress">
+    <div class="progress-h"><b>준비 진행률</b><span id="pick-p-txt">0 / 0</span></div>
+    <div class="progress-bar"><i id="pick-p-bar" style="width:0%"></i></div>
+  </div>
+
+  <div class="pick-list" id="pick-list-body"></div>
+
+</div>
       </div><!-- /scr-picking -->
       <div class="screen" id="scr-dept"></div><!-- /scr-dept -->
       <div id="deptModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.45);z-index:10002;align-items:center;justify-content:center">
@@ -10578,6 +10950,7 @@ var PLIST={"bomrouting": {"t": "Routing 생성", "cols": ["제품", "순서", "�
     var sno='SO-'+ymd+'-'+('0'+(++soSeq)).slice(-2);
     window.SHIP_ORDER.unshift({no:sno,plan:pno,cust:cust,item:item,qty:qty,status:'대기'});
     shipRenderPlan(); shipRenderOrder(); if(window.ordRefreshShip)window.ordRefreshShip();
+    if(window.dispAddFromShipPlan) dispAddFromShipPlan(pno, cust, item, qty, date);  /* T-4: 배차 연동 */
     var d2=document.getElementById('spQty'); if(d2)d2.value='';
     if(window.mesAddNotif) window.mesAddNotif({type:'info',icon:'🚚',title:'출고계획 등록 · 출고지시 생성',desc:'['+item+'] '+_f(qty)+' 출고계획('+pno+') 등록 → 출고 지시('+sno+') 생성. 진행·확정 처리하세요.',action:function(){ if(window.gotoScreen)gotoScreen('shiporder'); },actionLabel:'출고 지시'});
     if(window.mesToast) window.mesToast({icon:'🚚',title:'출고계획 등록 완료',desc:pno+' ('+cust+' · '+item+' '+_f(qty)+') · 출고 지시 생성',actions:'<button class="tp-btn primary" data-tp="go">출고 지시 →</button><button class="tp-btn ghost" data-tp="dismiss">닫기</button>',onAction:function(){ if(window.gotoScreen)gotoScreen('shiporder'); }});
@@ -11394,6 +11767,770 @@ console.log('[Width Stock Patch] 로드 완료 — MAT_STOCK:',
 
 })();
 
+</script>
+
+<!-- ===== T-2 배차 보드: 모달 (disp-) ===== -->
+  <div class="disp-modal" id="disp-cmpModal">
+    <div class="cmp-box">
+      <div class="cmp-head"><span>운송 방식 비용비교</span><span class="cmp-x" onclick="dispCloseCompare()">✕</span></div>
+      <div id="disp-cmpBody"></div>
+    </div>
+  </div>
+  <div class="disp-modal" id="disp-detModal" onclick="if(event.target===this)dispCloseDetail()">
+    <div class="det-box" id="disp-detBody"></div>
+  </div>
+  <div class="disp-modal top" id="disp-outModal">
+    <div class="out-box">
+      <div class="out-head no-print">
+        <div class="oh-t">배차 확정 산출물 <span id="disp-outMeta"></span></div>
+        <div>
+          <button onclick="dispPrintOut()">인쇄 / PDF 저장</button>
+          <button class="ghost" onclick="dispCloseOut()">닫기</button>
+        </div>
+      </div>
+      <div class="out-tabs no-print">
+        <div class="out-tab on" id="disp-tab-wi" onclick="dispSwitchOut('wi')">배송지시서 (자차)</div>
+        <div class="out-tab" id="disp-tab-pc" onclick="dispSwitchOut('pc')">택배 내역</div>
+      </div>
+      <div class="out-body" id="disp-outBody"></div>
+    </div>
+  </div>
+  <div class="disp-modal" id="disp-oneModal" onclick="if(event.target===this)dispCloseOne()">
+    <div class="one-box" id="disp-oneBody"></div>
+  </div>
+<!-- ===== T-2 배차 보드: 스크립트 ===== -->
+<script>
+/* =========================================================================
+   배차 설정 — 실제 데이터 나오면 이 블록만 교체
+   ========================================================================= */
+const DISP_CONFIG = { capacityKg: 1200, warnRatio: 0.85 };
+
+/* 주문 — 2026-07-08 출하계획서 기반 대표 15건.
+   orderer=발주처, cust=거래처(수취), deliverTo=납품처, qty/unit=발주량/단위, machine=작업기, done=완료(★), note=특이지시
+   weightKg/volumeSqm/boxes 는 여전히 임시값 — TODO: 실제 데이터로 교체 */
+let DISP_ORDERS = [
+  { id:'O1',  orderer:'쌍용',        cust:'삼보',           deliverTo:'평택 삼보',            address:'경기도 평택시',            item:'모조그라싱롤지(쌍용용)', prodCode:'-',         material:'모조그라싱', spec:'전용스티커 부착', unit:'ROLL', qty:100,    boxes:100, weightKg:180, volumeSqm:1200, machine:'-',      done:true,  location:'창고',   urgent:false, note:'납품후 삼보 사장님께 전화 010-8905-1215' },
+  { id:'O2',  orderer:'동아제약',    cust:'버텍스',         deliverTo:'이천 버텍스',          address:'경기도 이천시',            item:'가그린 어드벤스드 제로 마일드 380mL 전면', prodCode:'GAM 380', material:'유포지', spec:'63,156매', unit:'매', qty:63156, boxes:26, weightKg:210, volumeSqm:1580, machine:'디지털', done:false, location:'공정중', urgent:false, note:'' },
+  { id:'O3',  orderer:'제때 유통사업1팀', cust:'AJ네트웍스', deliverTo:'오산 AJ네트웍스',      address:'경기도 오산시',            item:'아트내한성 100*100(제때오산) 녹색_원주 상온+냉장', prodCode:'-', material:'아트내한성', spec:'100×100 · 10롤', unit:'ROLL', qty:10, boxes:10, weightKg:120, volumeSqm:820, machine:'디지털', done:false, location:'공정중', urgent:false, note:'' },
+  { id:'O4',  orderer:'양기사님',    cust:'시지바이오',     deliverTo:'화성 시지바이오',      address:'경기도 화성시',            item:'ULTRA V HYAL FILLER HARD 주사기라벨', prodCode:'VOM-M', material:'유포지', spec:'20,000매', unit:'매', qty:20000, boxes:15, weightKg:140, volumeSqm:980, machine:'레토', done:false, location:'창고', urgent:false, note:'홍준기님 010-9431-9680' },
+  { id:'O5',  orderer:'테성코팅',    cust:'테성코팅',       deliverTo:'영등포 테성코팅',      address:'서울특별시 영등포구',      item:'원단 픽업 · 외주 완성분 회수', prodCode:'-', material:'-', spec:'-', unit:'ROLL', qty:1, boxes:1, weightKg:80, volumeSqm:600, machine:'-', done:false, location:'-', urgent:false, type:'pickup', note:'납품 가는 길에 외주 원단 회수' },
+  { id:'O6',  orderer:'우주사무기',  cust:'이진',           deliverTo:'영등포 이진',          address:'서울특별시 영등포구',      item:'우주유포 90*55(1,000매)4지관_LG본체', prodCode:'4157', material:'유포지', spec:'90×55 · 200롤', unit:'ROLL', qty:200, boxes:20, weightKg:260, volumeSqm:1690, machine:'레토', done:false, location:'창고', urgent:false, note:'' },
+  { id:'O7',  orderer:'남궁기사님',  cust:'에스피알',       deliverTo:'시흥 에스피알',        address:'경기도 시흥시',            item:'유포내한성_100*100_THE 경희궁찬', prodCode:'-', material:'유포내한성', spec:'100×100 · 20롤', unit:'ROLL', qty:20, boxes:20, weightKg:230, volumeSqm:1490, machine:'디지털', done:false, location:'공정중', urgent:false, note:'' },
+  { id:'O8',  orderer:'한국토요타', cust:'한국토요타',      deliverTo:'안산 한국토요타',      address:'경기도 안산시',            item:'바코드 (100*90)2,000매', prodCode:'Case Label', material:'아트지', spec:'100×90 · 15박스', unit:'BOX', qty:15, boxes:15, weightKg:310, volumeSqm:2010, machine:'평압', done:true, location:'창고', urgent:false, note:'' },
+  { id:'O9',  orderer:'바코드넷',    cust:'바코드넷',       deliverTo:'인천 청라센터',        address:'인천광역시 서구 청라',     item:'감열 55*35-1500매', prodCode:'RD320', material:'감열지', spec:'55×35 · 400롤', unit:'ROLL', qty:400, boxes:16, weightKg:180, volumeSqm:1180, machine:'디지털', done:false, location:'공정중', urgent:false, note:'' },
+  { id:'O10', orderer:'동산',        cust:'동산',           deliverTo:'광명 동산',            address:'경기도 광명시',            item:'감열 90*120(주황)물류박스', prodCode:'-', material:'감열지', spec:'90×120 · 20롤', unit:'ROLL', qty:20, boxes:20, weightKg:520, volumeSqm:3300, machine:'성연', done:false, location:'창고', urgent:false, note:'' },
+  { id:'O11', orderer:'제이앤제이', cust:'제이앤제이',      deliverTo:'용인 제이앤제이',      address:'경기도 용인시',            item:'감열 100*80_UV 분홍코팅(자체)(k-3)', prodCode:'L1146', material:'감열지', spec:'100×80 · 24롤', unit:'ROLL', qty:24, boxes:24, weightKg:340, volumeSqm:2200, machine:'재단팀', done:false, location:'공정중', urgent:false, note:'' },
+  { id:'O12', orderer:'라벨소',      cust:'라벨소',         deliverTo:'용인 라벨소',          address:'경기도 용인시',            item:'유포감열 70*160(곰곰 호주산 소고기)', prodCode:'-', material:'유포감열', spec:'70×160 · 20롤', unit:'ROLL', qty:20, boxes:20, weightKg:260, volumeSqm:1700, machine:'웨이강', done:false, location:'공정중', urgent:false, note:'출발전 엘앤피 대표님하고 통화' },
+  { id:'O13', orderer:'고라벨',      cust:'고라벨',         deliverTo:'하남 고라벨',          address:'경기도 하남시',            item:'아트 27*80_안심배달(DELIVERY)', prodCode:'-', material:'아트지', spec:'27×80 · 120롤', unit:'ROLL', qty:120, boxes:12, weightKg:150, volumeSqm:980, machine:'디지털', done:false, location:'창고', urgent:true, note:'안심배달 / 냉동식품 긴급배송' },
+  { id:'O14', orderer:'오전 에이피알 포승1센터', cust:'이진', deliverTo:'평택 이진',          address:'경기도 평택시',            item:'우주)유포원형 60*60(2,000매)7지관 메디큐브', prodCode:'5838', material:'유포지', spec:'60×60 · 25롤', unit:'ROLL', qty:25, boxes:25, weightKg:290, volumeSqm:1900, machine:'웨이강', done:false, location:'공정중', urgent:false, note:'보내는사람: 우주사무기' },
+  { id:'O15', orderer:'대웅제약',    cust:'대웅제약',       deliverTo:'오송 대웅제약',        address:'충청북도 청주시 오송',     item:'DWP16001311_V2', prodCode:'-', material:'유포지', spec:'9,234매', unit:'매', qty:9234, boxes:2, weightKg:30, volumeSqm:200, machine:'디지털', done:false, location:'창고', urgent:false, defaultType:'parcel', note:'' }
+];
+
+/* 주소 → 배송권역 판정 규칙. 위에서부터 첫 매칭 채택 → 구체적인 권역을 위로. */
+const DISP_ZONE_MAP = [
+  { zone:'부평', keywords:['부평'] },
+  { zone:'인천', keywords:['인천'] },
+  { zone:'평택', keywords:['평택'] },
+  { zone:'이천', keywords:['이천'] },
+  { zone:'오산', keywords:['오산'] },
+  { zone:'화성', keywords:['화성'] },
+  { zone:'시흥', keywords:['시흥'] },
+  { zone:'안산', keywords:['안산'] },
+  { zone:'광명', keywords:['광명'] },
+  { zone:'용인', keywords:['용인'] },
+  { zone:'하남', keywords:['하남'] },
+  { zone:'안성', keywords:['안성'] },
+  { zone:'오송', keywords:['오송','청주'] },
+  { zone:'서울', keywords:['서울','영등포','성동','금천','구로','송파'] },
+  { zone:'김포', keywords:['김포'] },
+  { zone:'부천', keywords:['부천'] }
+];
+
+/* 배송 루트 계산용 좌표(대략값). TODO: 실제 공장·권역 좌표로 교체 */
+const DISP_FACTORY = { lat:37.503, lng:126.780 };
+const DISP_ZONE_COORDS = {
+  '평택':{lat:37.00,lng:127.11}, '이천':{lat:37.28,lng:127.44}, '오산':{lat:37.15,lng:127.07},
+  '화성':{lat:37.20,lng:126.83}, '시흥':{lat:37.38,lng:126.80}, '안산':{lat:37.32,lng:126.83},
+  '광명':{lat:37.48,lng:126.86}, '용인':{lat:37.24,lng:127.18}, '하남':{lat:37.54,lng:127.21},
+  '안성':{lat:37.01,lng:127.28}, '오송':{lat:36.62,lng:127.33}, '서울':{lat:37.53,lng:126.98},
+  '인천':{lat:37.44,lng:126.70}, '부평':{lat:37.51,lng:126.72}, '김포':{lat:37.62,lng:126.72},
+  '부천':{lat:37.50,lng:126.78}
+};
+
+/* 지입 차량. homeZone = 기사 퇴근권역(임시) */
+let DISP_TRUCKS = [
+  { id:'t1', name:'1호차', driver:'홍용수',   homeZone:'안산' },
+  { id:'t2', name:'2호차', driver:'양준영',   homeZone:'인천' },
+  { id:'t3', name:'3호차', driver:'남궁세준', homeZone:'화성' },
+  { id:'t4', name:'4호차', driver:'서상호',   homeZone:'광명' }
+];
+
+let DISP_RULES = [
+  { id:'urgentDirect', label:'긴급 → 직접납품',    on:true },
+  { id:'zonePriority', label:'권역 우선 배정',      on:true },
+  { id:'capacityLimit',label:'1.2톤 적재 한도',    on:true },
+  { id:'driverHome',   label:'기사 퇴근권역 정렬',  on:true }
+];
+let DISP_CUSTOM_RULES = [];
+
+/* 운임표(임시값). TODO: 실제 단가로 교체 */
+const DISP_FREIGHT = {
+  charterByZone: { 평택:150000, 이천:150000, 오산:120000, 화성:110000, 시흥:95000, 안산:110000,
+                   광명:80000, 용인:140000, 하남:120000, 안성:170000, 오송:210000, 서울:90000,
+                   인천:85000, 부평:70000, 김포:75000, 부천:70000, 미지정:120000 },
+  directByZone:  { 평택:80000, 이천:80000, 오산:60000, 화성:55000, 시흥:52000, 안산:60000,
+                   광명:42000, 용인:75000, 하남:65000, 안성:95000, 오송:130000, 서울:50000,
+                   인천:45000, 부평:32000, 김포:35000, 부천:30000, 미지정:70000 },
+  parcel: { perBox:5500, kgPerBox:20, maxKg:120 }
+};
+/* ===================== 설정 끝 ===================== */
+
+const DISP_LOC_STYLE = {'창고':'var(--ok-bg);color:var(--ok)','공정중':'var(--warn-bg);color:var(--warn)','부분입고':'var(--accent-bg);color:var(--accent)'};
+
+let dispState = {};
+DISP_ORDERS.forEach(o => dispState[o.id] = 'pool');
+
+const d$ = id => document.getElementById(id);
+const dispRuleOn = id => { const r = DISP_RULES.find(r=>r.id===id); return r && r.on; };
+const dispTruckLoad = tid => DISP_ORDERS.filter(o=>dispState[o.id]===tid).reduce((s,o)=>s+o.weightKg,0);
+const dispLocStyle = loc => DISP_LOC_STYLE[loc] || DISP_LOC_STYLE['부분입고'];
+
+function dispResolveZone(address){
+  const a = (address || '').replace(/\s+/g,'');
+  for(const m of DISP_ZONE_MAP){ if(m.keywords.some(k => a.includes(k))) return m.zone; }
+  return '미지정';
+}
+function dispHaversine(a,b){
+  const R=6371, toR=x=>x*Math.PI/180;
+  const dLat=toR(b.lat-a.lat), dLng=toR(b.lng-a.lng);
+  const s=Math.sin(dLat/2)**2 + Math.cos(toR(a.lat))*Math.cos(toR(b.lat))*Math.sin(dLng/2)**2;
+  return 2*R*Math.asin(Math.sqrt(s));
+}
+function dispOptimizeRoute(truck, orders){
+  if(!orders.length) return { stops:[], distanceKm:0, timeText:'-' };
+  const coord = z => DISP_ZONE_COORDS[z] || DISP_FACTORY;
+  let pool = [...orders], reserved = [];
+  if(dispRuleOn('driverHome')){
+    reserved = pool.filter(o => o.zone === truck.homeZone);
+    pool     = pool.filter(o => o.zone !== truck.homeZone);
+  }
+  const ordered = []; let cur = DISP_FACTORY;
+  const pull = arr => {
+    let bi=0, bd=Infinity;
+    arr.forEach((o,i)=>{ const d=dispHaversine(cur,coord(o.zone)); if(d<bd){bd=d;bi=i;} });
+    const nx=arr.splice(bi,1)[0]; ordered.push(nx); cur=coord(nx.zone);
+  };
+  while(pool.length) pull(pool);
+  while(reserved.length) pull(reserved);
+  let dist=0, p=DISP_FACTORY;
+  ordered.forEach(o=>{ dist+=dispHaversine(p,coord(o.zone)); p=coord(o.zone); });
+  const min = Math.round(dist/28*60 + ordered.length*12);
+  const h = Math.floor(min/60), m = min%60;
+  return { stops:ordered, distanceKm:Math.round(dist), timeText: h?`${h}시간 ${m}분`:`${m}분` };
+}
+function dispFreightQuote(o){
+  const z = o.zone || '미지정';
+  const charter = DISP_FREIGHT.charterByZone[z] ?? DISP_FREIGHT.charterByZone['미지정'];
+  const direct  = DISP_FREIGHT.directByZone[z]  ?? DISP_FREIGHT.directByZone['미지정'];
+  let parcel = null;
+  if(o.weightKg <= DISP_FREIGHT.parcel.maxKg){
+    parcel = Math.ceil(o.weightKg / DISP_FREIGHT.parcel.kgPerBox) * DISP_FREIGHT.parcel.perBox;
+  }
+  return { charter, direct, parcel };
+}
+
+/* ---------- 카드 상세 ---------- */
+function dispOpenDetail(id, e){
+  if(e) e.stopPropagation();
+  const o = DISP_ORDERS.find(o=>o.id===id);
+  d$('disp-detBody').innerHTML =
+    `<div class="det-head">
+       <div class="dc">
+         <div>
+           <h3>${o.cust}${o.urgent?' <span style="font-size:12px;color:var(--danger);font-weight:600">· 긴급</span>':''}${o.done?' <span style="font-size:12px;color:var(--ok);font-weight:600">· ★완료</span>':''}</h3>
+           <div class="dsub">▸ ${o.deliverTo||'-'} · ${o.zone}</div>
+         </div>
+         <span class="det-x" onclick="dispCloseDetail()">✕</span>
+       </div>
+       <div>
+         <span class="det-box-badge"><b class="tnum">${o.boxes||'-'}</b><span>적재 박스</span></span>
+         <span style="margin-left:8px;font-size:11px;font-weight:600;padding:3px 9px;border-radius:9px;background:${dispLocStyle(o.location)}">${o.location}</span>
+       </div>
+       ${o.note?`<div class="det-note">▸ ${o.note}</div>`:''}
+     </div>
+     <dl class="det-grid">
+       <dt>발주처</dt><dd>${o.orderer||'-'}</dd>
+       <dt>작업기</dt><dd>${o.machine||'-'}</dd>
+       <dt>단위</dt><dd>${o.unit||'-'} · ${(o.qty||0).toLocaleString()}</dd>
+       <dt>납품처</dt><dd>${o.deliverTo||'-'}</dd>
+       <dt>품목</dt><dd>${o.item}</dd>
+       <dt>규격</dt><dd>${o.spec||'-'}</dd>
+       <dt>제품코드</dt><dd style="font-size:12px">${o.prodCode||'-'}</dd>
+       <dt>중량 / 부피</dt><dd class="tnum">${o.weightKg.toLocaleString()}kg · ${o.volumeSqm.toLocaleString()}㎡</dd>
+       <dt>주소</dt><dd style="font-size:12px">${o.address||'-'}</dd>
+     </dl>`;
+  d$('disp-detModal').classList.add('show');
+}
+function dispCloseDetail(){ d$('disp-detModal').classList.remove('show'); }
+
+/* ---------- 비용비교 (직접납품은 추천에서 제외) ---------- */
+function dispOpenCompare(id, e){
+  if(e) e.stopPropagation();
+  const o = DISP_ORDERS.find(o=>o.id===id);
+  const q = dispFreightQuote(o);
+  const opts = [
+    { lane:'charter', label:'용차',    cost:q.charter, note:'권역 단가 · 건별' },
+    { lane:'parcel',  label:'택배',    cost:q.parcel,
+      note: q.parcel===null ? `${DISP_FREIGHT.parcel.maxKg}kg 초과 · 택배 불가`
+                            : `${Math.ceil(o.weightKg/DISP_FREIGHT.parcel.kgPerBox)}박스` },
+    { lane:'direct',  label:'직접납품', cost:q.direct,  note:'긴급 시만 · 추천 제외' }
+  ];
+  const avail = opts.filter(x=>x.cost!=null && x.lane!=='direct');   // 직접납품 제외하고 추천
+  const best  = avail.length ? avail.reduce((a,b)=> b.cost<a.cost ? b : a, avail[0]) : null;
+
+  const rows = opts.map(x=>{
+    const isBest = best && x.cost!=null && x.lane===best.lane;
+    const costTxt = x.cost==null ? '—' : x.cost.toLocaleString()+'원';
+    return `<div class="cmp-row${isBest?' best':''}">
+      <div class="cmp-l"><b>${x.label}</b>${isBest?'<span class="cmp-tag">추천</span>':''}
+        <div class="cmp-note">${x.note}</div></div>
+      <div class="cmp-cost tnum">${costTxt}</div>
+      <button class="cmp-pick" ${x.cost==null?'disabled':''}
+        onclick="dispAssignFromModal('${id}','${x.lane}')">이 방식</button>
+    </div>`;
+  }).join('');
+
+  d$('disp-cmpBody').innerHTML =
+    `<div class="cmp-order"><b>${o.cust}</b> → ${o.deliverTo||''}<br>
+       <span class="cmp-sub">${o.item} · ${o.zone} · ${o.weightKg.toLocaleString()}kg</span></div>
+     ${rows}
+     <div class="cmp-rule">
+       <input id="disp-cmpRule" placeholder="예: 파손 위험 있어 택배 대신 용차">
+       <button onclick="dispSaveCompareRule('${id}')">규칙으로 기억</button>
+     </div>`;
+  d$('disp-cmpModal').classList.add('show');
+}
+function dispCloseCompare(){ d$('disp-cmpModal').classList.remove('show'); }
+function dispAssignFromModal(id, lane){ dispState[id]=lane; dispCloseCompare(); dispRender(); }
+function dispSaveCompareRule(id){
+  const o = DISP_ORDERS.find(o=>o.id===id);
+  const v = d$('disp-cmpRule').value.trim();
+  if(v){ DISP_CUSTOM_RULES.push(`${o.cust}: ${v}`); dispRenderChips(); }
+  dispCloseCompare();
+}
+
+/* ---------- 통합 팝업 (카드 클릭) ---------- */
+function dispOpenOne(id, e){
+  if(e) e.stopPropagation();
+  const o = DISP_ORDERS.find(o=>o.id===id);
+  const isPickup = o.type==='pickup';
+  const q = dispFreightQuote(o);
+  const cur = dispState[id];
+
+  // 추천(직접납품 제외)
+  const opts = [
+    { lane:'charter', label:'용차',    cost:q.charter, sub:'권역 단가' },
+    { lane:'parcel',  label:'택배',    cost:q.parcel,
+      sub: q.parcel===null ? `${DISP_FREIGHT.parcel.maxKg}kg 초과 · 불가` : `${Math.ceil(o.weightKg/DISP_FREIGHT.parcel.kgPerBox)}박스` },
+    { lane:'direct',  label:'직접납품', cost:q.direct,  sub:'유류+인건 추정' }
+  ];
+  const avail = opts.filter(x=>x.cost!=null && x.lane!=='direct');
+  const best  = avail.length ? avail.reduce((a,b)=> b.cost<a.cost ? b : a, avail[0]) : null;
+
+  const costRows = opts.map(x=>{
+    const isBest = best && x.cost!=null && x.lane===best.lane;
+    const isCur  = cur === x.lane;
+    const cls = isCur ? 'one-cost-row current' : (isBest ? 'one-cost-row best' : 'one-cost-row');
+    const tag = isCur ? '<span class="tag now">현재</span>' : (isBest ? '<span class="tag rec">추천</span>' : '');
+    const costTxt = x.cost==null ? '—' : x.cost.toLocaleString()+'원';
+    const btn = x.cost==null ? '' : `<button class="one-assign" onclick="dispOneAssign('${id}','${x.lane}')">이걸로</button>`;
+    return `<div class="${cls}">
+      <div class="lbl">${x.label}${tag}<div class="sub">${x.sub}</div></div>
+      <div class="cost tnum">${costTxt}</div>
+      ${btn}
+    </div>`;
+  }).join('');
+
+  // 차량 배정 버튼
+  const truckBtns = DISP_TRUCKS.map(t=>{
+    const active = cur===t.id ? ' on':'';
+    return `<button class="one-assign${active}" onclick="dispOneAssign('${id}','${t.id}')">${t.name} ${t.driver}</button>`;
+  }).join('');
+
+  const poolBtn = cur==='pool' ? '' : `<button onclick="dispOneAssign('${id}','pool')">미배차로</button>`;
+  const urgActive = o.urgent ? ' on':'';
+  const locLine = isPickup ? '' : `<dt>위치</dt><dd>${o.location||'-'}</dd>`;
+
+  d$('disp-oneBody').innerHTML = `
+    <div class="one-head">
+      <div class="one-title">
+        <div>
+          <h3>${o.cust}</h3>
+          <div class="one-sub">${o.deliverTo||'-'} · ${o.zone}</div>
+        </div>
+        <span class="one-x" onclick="dispCloseOne()">✕</span>
+      </div>
+      <div class="one-badges">
+        <div class="one-boxbadge"><b class="tnum">${o.boxes||'-'}</b><span>박스</span></div>
+        ${isPickup?'<span style="background:#efe6fb;color:#6b3fb5">픽업 오더</span>':''}
+        ${o.urgent?'<span style="background:var(--danger);color:#fff">긴급</span>':''}
+      </div>
+      ${o.note?`<div class="one-note">⚠ ${o.note}</div>`:''}
+    </div>
+
+    <div class="one-scroll">
+      <div class="one-sec">기본 정보</div>
+      <dl class="one-grid">
+        <dt>발주처</dt><dd>${o.orderer||'-'}</dd>
+        <dt>납품처</dt><dd>${o.deliverTo||'-'}</dd>
+        <dt>제품</dt><dd>${o.item}</dd>
+        <dt>규격</dt><dd>${o.spec||'-'}</dd>
+        <dt>재질</dt><dd>${o.material||'-'}</dd>
+        <dt>제품코드</dt><dd style="font-size:12px">${o.prodCode||'-'}</dd>
+        <dt>작업기</dt><dd>${o.machine||'-'}</dd>
+        <dt>단위</dt><dd>${o.unit||'-'} · ${(o.qty||0).toLocaleString()}</dd>
+        <dt>중량 / 부피</dt><dd class="tnum">${o.weightKg.toLocaleString()}kg · ${o.volumeSqm.toLocaleString()}㎡</dd>
+        ${locLine}
+        ${o.planNo?`<dt>출고계획</dt><dd style="color:#1F497D;font-weight:600">${o.planNo}</dd>`:''}
+        <dt>주소</dt><dd style="font-size:12px">${o.address||'-'}</dd>
+      </dl>
+
+      ${isPickup ? `
+        <div class="one-sec">픽업 처리</div>
+        <div style="font-size:12.5px;color:var(--muted);line-height:1.5;background:#f9fafc;padding:10px 12px;border-radius:8px">
+          이 오더는 <b>회수(픽업)</b> 건입니다. 같은 권역(${o.zone})을 도는 차량에 자동 편승됩니다.
+          기사님이 납품 완료 후 지정된 곳에서 원단을 받아 오는 흐름.
+        </div>` : `
+        <div class="one-sec">운송 방식 · 비용비교</div>
+        ${costRows}`}
+
+      <div class="one-sec">${isPickup?'차량 지정':'차량 직접 지정'}</div>
+      <div class="one-truckpick">${truckBtns}</div>
+    </div>
+
+    <div class="one-foot">
+      <div class="left">
+        <button class="one-urgbtn${urgActive}" onclick="dispOneToggleUrgent('${id}')">⚡ 긴급 ${o.urgent?'해제':''}</button>
+      </div>
+      <div class="right">
+        ${poolBtn}
+        <button onclick="dispCloseOne()">닫기</button>
+      </div>
+    </div>
+  `;
+  d$('disp-oneModal').classList.add('show');
+}
+
+function dispCloseOne(){ d$('disp-oneModal').classList.remove('show'); }
+function dispOneAssign(id, lane){ dispState[id]=lane; dispRender(); dispOpenOne(id); }
+function dispOneToggleUrgent(id){
+  const o = DISP_ORDERS.find(o=>o.id===id);
+  o.urgent = !o.urgent;
+  dispRender(); dispOpenOne(id);
+}
+
+d$('disp-today').textContent = new Date().toLocaleDateString('ko-KR',{month:'long',day:'numeric',weekday:'short'});
+
+/* ---------- 렌더 ---------- */
+function dispOrderCard(o, seq){
+  const el = document.createElement('div');
+  el.className = 'ord' + (o.urgent ? ' urgent':'');
+  el.draggable = true; el.dataset.id = o.id;
+  el.addEventListener('click', e=> dispOpenOne(o.id, e));
+  const seqHtml = seq ? `<span class="seq tnum">${seq}</span>` : '';
+  const zoneClass = o.zone === '미지정' ? 'badge warn' : 'badge zone';
+  const badge = o.type==='pickup'
+    ? `<span class="badge pickup">픽업</span>`
+    : (o.urgent
+        ? `<span class="badge urg">긴급</span>`
+        : `<span class="${zoneClass}">${o.zone}</span>`);
+  el.innerHTML =
+    `<div class="ord-top"><span class="cust">${o.cust}</span>${seq?seqHtml:badge}</div>`+
+    `<div class="to">▸ ${o.deliverTo||''}</div>`+
+    `<div class="item">${o.item} · ${o.qty.toLocaleString()}${o.unit}</div>`+
+    `<div class="meta"><b class="tnum">${o.weightKg.toLocaleString()}kg</b> · ${o.boxes||'-'}박스 · ${o.zone}</div>`+
+    (o.note ? `<div class="ord-note">${o.note}</div>` : '')+
+    `<div class="tags">`+
+      `<span class="loc-badge" title="위치 토글" onclick="dispToggleLoc('${o.id}',event)" style="background:${dispLocStyle(o.location)}">${o.location}</span>`+
+      `${o.note?'<span class="chip-note">! 특이</span>':''}`+
+      `${o.done?'<span class="chip-done">★완료</span>':''}`+
+    `</div>`;
+  el.addEventListener('dragstart',e=>{ e.dataTransfer.setData('text',o.id); el.classList.add('dragging'); });
+  el.addEventListener('dragend',()=> el.classList.remove('dragging'));
+  return el;
+}
+
+function dispRender(){
+  const pool = d$('disp-lane-pool'); pool.innerHTML='';
+  const poolOrders = DISP_ORDERS.filter(o=>dispState[o.id]==='pool');
+  poolOrders.forEach(o=> pool.appendChild(dispOrderCard(o)));
+  if(!poolOrders.length) pool.innerHTML = '<div class="drop-hint">모두 배차됨</div>';
+
+  const wrap = d$('disp-trucks'); wrap.innerHTML='';
+  DISP_TRUCKS.forEach(t=>{
+    const assigned = DISP_ORDERS.filter(o=>dispState[o.id]===t.id);
+    const route = dispOptimizeRoute(t, assigned);
+    const list = route.stops;
+    const load = list.reduce((s,o)=>s+o.weightKg,0);
+    const wipCount = list.filter(o=>o.location!=='창고').length;
+    const ratio = load / DISP_CONFIG.capacityKg;
+    let col = 'var(--accent)';
+    if(ratio > 1) col='var(--danger)'; else if(ratio >= DISP_CONFIG.warnRatio) col='var(--warn)';
+
+    const card = document.createElement('div');
+    card.className='truck'; card.dataset.lane=t.id;
+    card.innerHTML =
+      `<div class="truck-head"><span class="name">${t.name} · ${t.driver}`+
+      `${wipCount?` <span style="font-size:10.5px;font-weight:600;color:var(--warn);background:var(--warn-bg);padding:1px 6px;border-radius:9px;margin-left:6px">⚠ 공정중 ${wipCount}</span>`:''}</span>`+
+      `<span class="home">퇴근권역 ${t.homeZone}</span></div>`+
+      `<div class="gauge"><i style="width:${Math.min(ratio*100,100)}%;background:${col}"></i></div>`+
+      `<div class="load"><span class="tnum">${load.toLocaleString()} / ${DISP_CONFIG.capacityKg.toLocaleString()}kg</span>`+
+      `<span class="tnum" style="font-weight:600;color:${ratio>=DISP_CONFIG.warnRatio?col:'var(--muted)'}">${Math.round(ratio*100)}%</span></div>`+
+      `<div class="route">${list.length ? `공장 → ${list.length}개소 → 퇴근(${t.homeZone}) · <b class="tnum">${route.distanceKm}km</b> · ${route.timeText}` : '배정 없음'}</div>`+
+      `<div class="drop-slot"></div>`;
+    const slot = card.querySelector('.drop-slot');
+    list.forEach((o,i)=> slot.appendChild(dispOrderCard(o, i+1)));
+    if(!list.length) slot.innerHTML='<div class="drop-hint">여기로 주문을 끌어오세요</div>';
+    wrap.appendChild(card);
+  });
+
+  ['parcel','charter','direct'].forEach(k=>{
+    const slot = d$('disp-slot-'+k); slot.innerHTML='';
+    const list = DISP_ORDERS.filter(o=>dispState[o.id]===k);
+    list.forEach(o=> slot.appendChild(dispOrderCard(o)));
+    if(!list.length) slot.innerHTML='<div class="drop-hint">—</div>';
+  });
+
+  const done = DISP_ORDERS.filter(o=>dispState[o.id]!=='pool').length;
+  d$('disp-s-total').textContent = DISP_ORDERS.length;
+  d$('disp-s-done').textContent  = done;
+  d$('disp-s-pool').textContent  = DISP_ORDERS.length - done;
+  d$('disp-pool-c').textContent  = (DISP_ORDERS.length-done)+'건';
+  d$('disp-s-ready').textContent = DISP_ORDERS.filter(o=>o.location==='창고').length;
+  dispBindDrop();
+  if(typeof pickRender === 'function') pickRender();  /* T-3: 배차 → 피킹 동기화 */
+}
+
+function dispBindDrop(){
+  document.querySelectorAll('#scr-dispatch [data-lane]').forEach(zone=>{
+    zone.ondragover = e=>{ e.preventDefault(); zone.classList.add('over'); };
+    zone.ondragleave = ()=> zone.classList.remove('over');
+    zone.ondrop = e=>{
+      e.preventDefault(); zone.classList.remove('over');
+      const id = e.dataTransfer.getData('text');
+      if(id){ dispState[id] = zone.dataset.lane; dispRender(); }
+    };
+  });
+}
+
+function dispToggleUrgent(id, e){ if(e) e.stopPropagation(); const o=DISP_ORDERS.find(o=>o.id===id); o.urgent=!o.urgent; dispRender(); }
+function dispToggleLoc(id, e){
+  if(e) e.stopPropagation();
+  const cycle = ['창고','공정중','부분입고'];
+  const o = DISP_ORDERS.find(o=>o.id===id);
+  o.location = cycle[(cycle.indexOf(o.location)+1) % cycle.length];
+  dispRender();
+}
+
+function dispAuto(){
+  DISP_ORDERS.forEach(o=> dispState[o.id]='pool');
+  const cap = DISP_CONFIG.capacityKg;
+  DISP_ORDERS.forEach(o=>{
+    if(o.type==='pickup'){ /* 픽업은 아래 zonePriority에서 같은 권역 차에 붙임 */ return; }
+    if(dispRuleOn('urgentDirect') && o.urgent){ dispState[o.id]='direct'; return; }
+    if(o.defaultType==='parcel'){ dispState[o.id]='parcel'; return; }
+  });
+  const pending = DISP_ORDERS.filter(o=>dispState[o.id]==='pool');
+  const fits = (tid,o)=> !dispRuleOn('capacityLimit') || (dispTruckLoad(tid)+o.weightKg <= cap);
+  if(dispRuleOn('zonePriority')){
+    pending.forEach(o=>{
+      if(dispState[o.id]!=='pool') return;
+      const t = DISP_TRUCKS.find(t=>t.homeZone===o.zone && fits(t.id,o));
+      if(t) dispState[o.id]=t.id;
+    });
+  }
+  // 픽업: 같은 권역을 도는 차에 편승. 여유 없으면 남겨두고 담당자가 수동 배정.
+  DISP_ORDERS.filter(o=>o.type==='pickup' && dispState[o.id]==='pool').forEach(o=>{
+    const t = DISP_TRUCKS.find(t=>{
+      const hasZoneStop = DISP_ORDERS.some(x=> dispState[x.id]===t.id && x.zone===o.zone);
+      return hasZoneStop && fits(t.id, o);
+    });
+    if(t) dispState[o.id] = t.id;
+  });
+  DISP_ORDERS.filter(o=>dispState[o.id]==='pool').forEach(o=>{
+    const t = DISP_TRUCKS.find(t=>fits(t.id,o));
+    dispState[o.id] = t ? t.id : 'charter';
+  });
+  dispRender();
+}
+function dispReset(){ DISP_ORDERS.forEach(o=> dispState[o.id]='pool'); dispRender(); }
+
+/* ---------- 배차 확정 → 산출물 ---------- */
+let DISP_CONFIRMED = null;
+function dispConfirm(){
+  const pool = DISP_ORDERS.filter(o=>dispState[o.id]==='pool');
+  if(pool.length && !confirm(`미배차 ${pool.length}건이 남아 있습니다. 그대로 확정할까요?`)) return;
+  DISP_CONFIRMED = {
+    at: new Date().toLocaleString('ko-KR'),
+    trucks: DISP_TRUCKS.map(t=>{
+      const assigned = DISP_ORDERS.filter(o=>dispState[o.id]===t.id);
+      const route = dispOptimizeRoute(t, assigned);
+      return { name:t.name, driver:t.driver, homeZone:t.homeZone,
+               load: route.stops.reduce((s,o)=>s+o.weightKg,0),
+               boxes: route.stops.reduce((s,o)=>s+(o.boxes||0),0),
+               distanceKm: route.distanceKm, timeText: route.timeText,
+               stops: route.stops.map(o=>({...o})) };
+    }),
+    parcel:  DISP_ORDERS.filter(o=>dispState[o.id]==='parcel').map(o=>({...o})),
+    charter: DISP_ORDERS.filter(o=>dispState[o.id]==='charter').map(o=>({...o})),
+    direct:  DISP_ORDERS.filter(o=>dispState[o.id]==='direct').map(o=>({...o}))
+  };
+  dispOutTab = 'wi'; dispRenderConfirmed(); d$('disp-outModal').classList.add('show');
+}
+let dispOutTab = 'wi';
+function dispSwitchOut(tab){
+  dispOutTab = tab;
+  d$('disp-tab-wi').classList.toggle('on', tab==='wi');
+  d$('disp-tab-pc').classList.toggle('on', tab==='pc');
+  dispRenderConfirmed();
+}
+function dispRenderConfirmed(){
+  const c = DISP_CONFIRMED; if(!c) return;
+  d$('disp-outMeta').textContent = '확정 ' + c.at;
+  if(dispOutTab==='wi'){
+    const docs = c.trucks.filter(t=>t.stops.length).map(t=>{
+      const rows = t.stops.map((o,i)=>
+        `<tr>
+          <td class="wi-seq">${i+1}</td>
+          <td>
+            <div class="wi-cust">${o.cust}${o.type==='pickup'?'<span class="wi-pickup">픽업</span>':''}${o.location&&o.location!=='창고'&&o.location!=='-'?`<span class="wi-loc" style="background:${dispLocStyle(o.location)}">${o.location}</span>`:''}</div>
+            <div class="wi-to">▸ ${o.deliverTo||''} · ${o.address||''}</div>
+            ${o.note?`<div class="wi-note">⚠ ${o.note}</div>`:''}
+          </td>
+          <td class="wi-item">${o.item}<br><span style="color:var(--muted);font-size:11.5px">${o.qty.toLocaleString()}${o.unit} · ${o.machine||''}</span></td>
+          <td class="wi-box"><b class="tnum">${o.boxes||'-'}</b><span>박스</span></td>
+          <td class="wi-kg tnum">${o.weightKg.toLocaleString()}kg</td>
+          <td class="wi-chk">☐</td>
+        </tr>`).join('');
+      return `<div class="wi">
+        <div class="wi-top">
+          <div><span class="wi-truck">${t.name}</span><span class="wi-driver">${t.driver} 기사</span></div>
+          <div class="wi-sum">총 ${t.boxes}박스 · ${t.load.toLocaleString()}kg<br>${t.stops.length}개소 · ${t.distanceKm}km · ${t.timeText} · 퇴근 ${t.homeZone}</div>
+        </div>
+        <table class="wi-tbl">
+          <thead><tr><th style="width:34px;text-align:center">순번</th><th>거래처 / 납품처 / 특이지시</th><th>품목</th><th style="text-align:center;width:60px">박스</th><th style="text-align:right;width:74px">중량</th><th style="width:34px;text-align:center">적재</th></tr></thead>
+          <tbody>${rows}</tbody>
+        </table>
+      </div>`;
+    }).join('');
+    d$('disp-outBody').innerHTML = docs || '<div class="out-empty">자차 배송 없음</div>';
+  } else {
+    let html = '';
+    if(c.parcel.length){
+      const rows = c.parcel.map(o=>{
+        const boxes = o.boxes || Math.ceil(o.weightKg / DISP_FREIGHT.parcel.kgPerBox);
+        return `<tr>
+          <td><b>${o.cust}</b><div style="font-size:11.5px;color:var(--muted)">▸ ${o.deliverTo||''}</div></td>
+          <td style="font-size:12px">${o.address||'-'}</td>
+          <td>${o.item}<div style="font-size:11.5px;color:var(--muted)">${o.qty.toLocaleString()}${o.unit}</div></td>
+          <td class="num tnum">${boxes}박스</td>
+          <td class="num tnum">${o.weightKg.toLocaleString()}kg</td>
+        </tr>`;
+      }).join('');
+      html = `<table class="pc-tbl"><thead><tr><th>받는 곳</th><th>주소</th><th>품목</th><th class="num">박스</th><th class="num">중량</th></tr></thead><tbody>${rows}</tbody></table>`;
+    } else { html = '<div class="out-empty">택배 건 없음</div>'; }
+    const etc = [];
+    if(c.charter.length) etc.push(`용차 ${c.charter.length}건: ${c.charter.map(o=>o.cust).join(', ')}`);
+    if(c.direct.length)  etc.push(`직접납품 ${c.direct.length}건: ${c.direct.map(o=>o.cust).join(', ')}`);
+    if(etc.length) html += `<div style="margin-top:16px;padding-top:12px;border-top:1px solid var(--line)">`+etc.map(e=>`<div class="etc-line">${e}</div>`).join('')+`</div>`;
+    d$('disp-outBody').innerHTML = html;
+  }
+}
+function dispCloseOut(){ d$('disp-outModal').classList.remove('show'); }
+function dispPrintOut(){
+  document.body.classList.add('disp-printing');
+  const done = () => document.body.classList.remove('disp-printing');
+  window.onafterprint = done;
+  window.print();
+  setTimeout(done, 1000);
+}
+
+/* ---------- 규칙 패널 ---------- */
+function dispRenderChips(){
+  const box = d$('disp-chips'); box.innerHTML='';
+  DISP_RULES.forEach(r=>{
+    const c=document.createElement('span');
+    c.className='chip'+(r.on?' on':'');
+    c.innerHTML=`<span class="dot"></span>${r.label}`;
+    c.onclick=()=>{ r.on=!r.on; dispRenderChips(); dispRender(); };
+    box.appendChild(c);
+  });
+  DISP_CUSTOM_RULES.forEach((r,i)=>{
+    const c=document.createElement('span');
+    c.className='chip on';
+    c.innerHTML=`<span class="dot"></span>${r} <span style="opacity:.6;margin-left:2px" onclick="dispRemoveRule(${i},event)">✕</span>`;
+    box.appendChild(c);
+  });
+  const add=document.createElement('span');
+  add.className='chip add'; add.textContent='＋ 규칙 추가';
+  add.onclick=dispShowRuleInput;
+  box.appendChild(add);
+}
+function dispShowRuleInput(){ d$('disp-ruleInput').classList.add('show'); d$('disp-ruleText').focus(); }
+function dispHideRuleInput(){ d$('disp-ruleInput').classList.remove('show'); d$('disp-ruleText').value=''; }
+function dispCommitRule(){ const v=d$('disp-ruleText').value.trim(); if(v){ DISP_CUSTOM_RULES.push(v); } dispHideRuleInput(); dispRenderChips(); }
+function dispRemoveRule(i,e){ e.stopPropagation(); DISP_CUSTOM_RULES.splice(i,1); dispRenderChips(); }
+
+/* ===== T-4: 출고계획 → 배차 연동 ===== */
+let DISP_SEQ = 100;  // 연동 생성 오더 id 시퀀스
+
+window.dispAddFromShipPlan = function(planNo, cust, item, qty, date){
+  const type = (document.getElementById('spType')||{}).value || 'deliver';
+  const note = ((document.getElementById('spNote')||{}).value || '').trim();
+
+  // 직발송은 배차 대상 아님 — 카드 안 만들고 알림만
+  if(type === 'direct-ship'){
+    if(window.mesToast) mesToast({icon:'🚚',title:'업체 직발송 건',desc:cust+' · '+item+' — 배차 대상에서 제외',actions:'<button class="tp-btn ghost" data-tp="dismiss">닫기</button>'});
+    const noteEl = document.getElementById('spNote'); if(noteEl) noteEl.value='';
+    return;
+  }
+
+  // 통합본 거래처 마스터(CUST_MASTER)는 이름만 있고 주소가 없음
+  // → 주소 빈 값 = 권역 '미지정'으로 등록. TODO: 거래처 주소 마스터 확보 시 여기서 조회
+  const addr = '';
+
+  const id = 'SP' + (++DISP_SEQ);
+  const newOrder = {
+    id: id,
+    orderer: cust,
+    cust: cust,
+    deliverTo: cust,
+    address: addr,
+    item: item,
+    prodCode: '-',
+    material: '-',
+    spec: (qty||0).toLocaleString() + ' 출고',
+    unit: '-',
+    qty: qty || 0,
+    boxes: Math.max(1, Math.ceil((qty||0)/1000)),   // 임시 환산: 1,000당 1박스. TODO 실제 환산으로 교체
+    weightKg: Math.max(10, Math.ceil((qty||0)/100)), // 임시 환산. TODO 실제 무게로 교체
+    volumeSqm: Math.max(50, Math.ceil((qty||0)/10)), // 임시 환산. TODO
+    machine: '-',
+    done: true,
+    location: '창고',
+    urgent: false,
+    note: note || ('출고계획 ' + planNo),
+    planNo: planNo
+  };
+  if(type === 'pickup')  newOrder.type = 'pickup';
+  if(type === 'return'){ newOrder.type = 'pickup'; newOrder.note = (note?note+' · ':'') + '자재 회수'; }
+  if(type === 'sample'){ newOrder.note = (note?note+' · ':'') + '샘플 전달'; newOrder.boxes = 1; newOrder.weightKg = 5; }
+  if(type === 'parcel')  newOrder.defaultType = 'parcel';
+
+  newOrder.zone = dispResolveZone(newOrder.address);
+  DISP_ORDERS.push(newOrder);
+  dispState[id] = 'pool';
+  if(typeof PICK_STATE !== 'undefined') PICK_STATE[id] = false;
+  dispRender();
+
+  if(window.mesToast) mesToast({icon:'🚛',title:'배차 대기 추가',desc:cust+' · '+item+' → 배차 보드 미배차 풀',actions:'<button class="tp-btn primary" data-tp="go">배차 보드 →</button><button class="tp-btn ghost" data-tp="dismiss">닫기</button>',onAction:function(){ if(window.gotoScreen)gotoScreen('dispatch'); }});
+
+  const noteEl = document.getElementById('spNote'); if(noteEl) noteEl.value='';
+};
+
+/* ---------- init ---------- */
+DISP_ORDERS.forEach(o => o.zone = dispResolveZone(o.address));
+dispRenderChips();
+dispAuto();
+</script>
+
+<!-- ===== T-3 피킹 리스트: 모달 (pick-) ===== -->
+  <div class="pick-modal" id="pick-qrModal" onclick="if(event.target===this)pickCloseQr()">
+    <div class="modal-box">
+      <div class="modal-h"><b>완성품 QR</b><span class="modal-x" onclick="pickCloseQr()">✕</span></div>
+      <canvas id="pick-qrCanvas"></canvas>
+      <div class="qr-info" id="pick-qrInfo"></div>
+    </div>
+  </div>
+
+  <div class="pick-modal" id="pick-scanModal" onclick="if(event.target===this)pickCloseScan()">
+    <div class="scan-box">
+      <div class="modal-h"><b>QR 스캔</b><span class="modal-x" onclick="pickCloseScan()">✕</span></div>
+      <div class="scan-cam">카메라 시뮬레이션</div>
+      <div class="scan-hint">실제 MES에선 카메라로 QR을 인식.<br>데모: 아래 버튼 = 랜덤 완성품 스캔</div>
+      <button class="primary" onclick="pickSimulateScan()" style="width:100%">랜덤 스캔 (시뮬레이션)</button>
+    </div>
+  </div>
+
+<!-- ===== T-3 피킹 리스트: 스크립트 (DISP_ORDERS 공유) ===== -->
+<script>
+/* 피킹 상태: id -> true(준비완료)/false — 주문 데이터는 배차의 DISP_ORDERS 공유 */
+let PICK_STATE = {};
+DISP_ORDERS.forEach(o => PICK_STATE[o.id] = false);
+
+const p$ = id => document.getElementById(id);
+const PICK_LOC_CLASS = {'창고':'loc-wh','공정중':'loc-wip','부분입고':'loc-part'};
+
+p$('pick-today').textContent = new Date().toLocaleDateString('ko-KR',{month:'long',day:'numeric',weekday:'short'}) + ' 준비';
+
+function pickRender(){
+  const wrap = p$('pick-list-body'); wrap.innerHTML='';
+  DISP_ORDERS.forEach(o=>{
+    const el = document.createElement('div');
+    el.className = 'pick' + (PICK_STATE[o.id]?' done':'');
+    el.innerHTML =
+      `<div class="pick-chk" onclick="pickToggle('${o.id}')">✓</div>`+
+      `<div class="p-main"><b>${o.cust}</b> · ${o.item}`+
+        `<div class="p-sub">${o.deliverTo||''} · ${o.boxes||'-'}박스 · ${o.weightKg.toLocaleString()}kg · 작업기 ${o.machine||'-'}</div>`+
+        (o.note?`<div class="p-note">⚠ ${o.note}</div>`:'')+
+      `</div>`+
+      `<span class="p-loc ${PICK_LOC_CLASS[o.location]||'loc-part'}">${o.location}</span>`+
+      `<div class="p-actions"><button onclick="pickShowQr('${o.id}')">QR</button></div>`;
+    wrap.appendChild(el);
+  });
+  const done = Object.values(PICK_STATE).filter(v=>v).length;
+  const total = DISP_ORDERS.length;
+  p$('pick-s-total').textContent = total;
+  p$('pick-s-done').textContent  = done;
+  p$('pick-s-wait').textContent  = total - done;
+  p$('pick-p-txt').textContent   = `${done} / ${total}`;
+  p$('pick-p-bar').style.width   = (total?done/total*100:0) + '%';
+}
+
+function pickToggle(id){ PICK_STATE[id] = !PICK_STATE[id]; pickRender(); }
+
+function pickShowQr(id){
+  const o = DISP_ORDERS.find(o=>o.id===id);
+  const code = `LP-${id}-${o.prodCode||'NONE'}`;
+  if(typeof QRCode !== 'undefined'){
+    QRCode.toCanvas(p$('pick-qrCanvas'), code, { width:200, margin:1 }, err=>{
+      if(err) console.error(err);
+    });
+  } else {
+    console.warn('QR 라이브러리 미로드 (오프라인?) — 코드 텍스트만 표시');
+  }
+  p$('pick-qrInfo').innerHTML =
+    `<div class="qi-cust">${o.cust}</div>`+
+    `<div class="qi-sub">${o.item} · ${o.boxes||'-'}박스</div>`+
+    `<div class="qi-sub">${o.deliverTo||''}</div>`+
+    `<div class="qr-code">${code}</div>`;
+  p$('pick-qrModal').classList.add('show');
+}
+function pickCloseQr(){ p$('pick-qrModal').classList.remove('show'); }
+
+function pickOpenScan(){ p$('pick-scanModal').classList.add('show'); }
+function pickCloseScan(){ p$('pick-scanModal').classList.remove('show'); }
+function pickSimulateScan(){
+  const pending = DISP_ORDERS.filter(o=>!PICK_STATE[o.id]);
+  if(!pending.length){ alert('모든 완성품이 이미 준비완료입니다.'); return; }
+  const target = pending[Math.floor(Math.random()*pending.length)];
+  PICK_STATE[target.id] = true;
+  pickCloseScan();
+  pickRender();
+  setTimeout(()=> alert(`✓ ${target.cust} · ${target.item} 준비완료`), 100);
+}
+
+pickRender();
 </script>
 </body>
 </html>
