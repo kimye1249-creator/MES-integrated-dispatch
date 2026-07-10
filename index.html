@@ -590,6 +590,9 @@ select.form-control { cursor: pointer; }
 .disp-modal .pc-tbl td{border-bottom:1px solid var(--line); padding:10px}
 .disp-modal .pc-tbl .num{text-align:right; white-space:nowrap}
 .disp-modal .etc-line{font-size:13px; color:var(--muted); padding:6px 2px}
+/* U-1: 반품 배지 (카드=#scr-dispatch, 배송지시서=.disp-modal) */
+#scr-dispatch .disp-badge-reverse{background:#fff3d9;color:#8a5b0e;font-size:10.5px;font-weight:600;padding:1px 7px;border-radius:11px}
+.disp-modal .wi-reverse{display:inline-block;font-size:10.5px;font-weight:600;padding:1px 7px;border-radius:9px;margin-left:6px;background:#fff3d9;color:#8a5b0e}
 /* 인쇄: dispPrintOut()이 body에 disp-printing을 켰을 때만 산출물만 출력 */
 @media print{
   body.disp-printing *{visibility:hidden}
@@ -759,7 +762,6 @@ select.form-control { cursor: pointer; }
   <div class="menu-group">
     <div class="menu-group-title">물류 관리</div>
     <div class="menu-item" onclick="selectMenu(this,'fgin')"><span class="menu-icon">🚚</span>완제품 입고</div>
-    <div class="menu-item" onclick="selectMenu(this,'fgout')"><span class="menu-icon">🚚</span>완제품 출고</div>
     <div class="menu-folder" onclick="toggleFolder(this)">
       <div class="menu-folder-label"><span class="menu-icon">📁</span>제품 재고</div>
       <span class="menu-folder-arrow">▶</span>
@@ -770,16 +772,17 @@ select.form-control { cursor: pointer; }
       <div class="menu-item" onclick="selectMenu(this,'fgstockstatus')"><span class="menu-icon">📊</span>제품 재고 현황</div>
     </div>
     <div class="menu-folder" onclick="toggleFolder(this)">
-      <div class="menu-folder-label"><span class="menu-icon">📁</span>출고 계획</div>
+      <div class="menu-folder-label"><span class="menu-icon">📁</span>출고 관리</div>
       <span class="menu-folder-arrow">▶</span>
     </div>
     <div class="menu-sub">
-      <div class="menu-item" onclick="selectMenu(this,'shipplanreg')"><span class="menu-icon">📝</span>출고계획 등록</div>
-      <div class="menu-item" onclick="selectMenu(this,'shipplanlist')"><span class="menu-icon">📄</span>출고계획 목록</div>
-      <div class="menu-item" onclick="selectMenu(this,'shiporder')"><span class="menu-icon">📦</span>출고 지시</div>
+      <div class="menu-item" onclick="selectMenu(this,'shipplanreg')"><span class="menu-icon">📝</span><span style="color:#FF6B35;font-weight:bold">①</span> 출고계획 등록</div>
+      <div class="menu-item" onclick="selectMenu(this,'shipplanlist')"><span class="menu-icon">📄</span><span style="color:#FF6B35;font-weight:bold">②</span> 출고계획 목록</div>
+      <div class="menu-item" onclick="selectMenu(this,'picking')"><span class="menu-icon">📋</span><span style="color:#FF6B35;font-weight:bold">③</span> 피킹 리스트 <span style="background:#FF6B35;color:#fff;font-size:10px;border-radius:8px;padding:1px 6px;margin-left:4px;font-weight:bold">NEW</span></div>
+      <div class="menu-item" onclick="selectMenu(this,'dispatch')"><span class="menu-icon">🚛</span><span style="color:#FF6B35;font-weight:bold">④</span> 배차 보드 <span style="background:#FF6B35;color:#fff;font-size:10px;border-radius:8px;padding:1px 6px;margin-left:4px;font-weight:bold">NEW</span></div>
+      <div class="menu-item" onclick="selectMenu(this,'shiporder')" style="opacity:.75"><span class="menu-icon">📦</span>출고 지시 <span style="font-size:10px;color:#999">· 배차 보드에서 처리</span></div>
+      <div class="menu-item" onclick="selectMenu(this,'fgout')" style="opacity:.75"><span class="menu-icon">🚚</span>완제품 출고 <span style="font-size:10px;color:#999">· 자동 반영</span></div>
       <div class="menu-item" onclick="selectMenu(this,'shipsched')"><span class="menu-icon">🗓️</span>납품 예정 현황</div>
-      <div class="menu-item" onclick="selectMenu(this,'dispatch')"><span class="menu-icon">🚛</span>배차 보드 <span style="background:#FF6B35;color:#fff;font-size:10px;border-radius:8px;padding:1px 6px;margin-left:4px;font-weight:bold">NEW</span></div>
-      <div class="menu-item" onclick="selectMenu(this,'picking')"><span class="menu-icon">📋</span>피킹 리스트 <span style="background:#FF6B35;color:#fff;font-size:10px;border-radius:8px;padding:1px 6px;margin-left:4px;font-weight:bold">NEW</span></div>
     </div>
   </div>
   <div class="menu-group">
@@ -1421,6 +1424,14 @@ select.form-control { cursor: pointer; }
       </div><!-- /scr-fgin -->
       <!-- 완제품 출고 (흐름도 신규) -->
       <div class="screen" id="scr-fgout">
+        <div id="fgout-banner" style="background:#e6f3ec;border:1px solid #b6dcc7;border-radius:10px;padding:12px 16px;margin-bottom:14px;display:flex;align-items:center;gap:10px">
+          <div style="font-size:20px">🚚</div>
+          <div style="flex:1">
+            <div style="font-size:13px;font-weight:bold;color:#2c7a54">이 화면은 조회용입니다</div>
+            <div style="font-size:12px;color:#2c7a54;margin-top:2px">완제품 출고는 <b>🚛 배차 보드</b>에서 배차가 확정될 때 자동으로 반영됩니다. 여기서는 출고 이력을 확인만 하세요.</div>
+          </div>
+          <button onclick="selectMenu(document.querySelector('.menu-item[onclick*=dispatch]'),'dispatch')" style="background:#2c7a54;color:#fff;border:none;border-radius:6px;padding:7px 12px;font-size:12px;font-weight:bold;cursor:pointer;white-space:nowrap">배차 보드 →</button>
+        </div>
         <div style="display:grid;grid-template-columns:1fr;gap:0;min-height:420px;border:1px solid #e0e0e0;border-radius:10px;overflow:hidden;background:white;box-shadow:0 2px 8px rgba(0,0,0,0.06)">
           <div style="display:flex;flex-direction:column;background:white">
             <div style="padding:14px 20px;border-bottom:1px solid #efefef;display:flex;align-items:center;justify-content:space-between">
@@ -1585,7 +1596,7 @@ select.form-control { cursor: pointer; }
                 <div style="display:flex;flex-direction:column;gap:3px"><label style="font-size:11px;color:#666;font-weight:600">가용재고</label><input id="spAvail" readonly style="width:90px;border:1px solid #ddd;border-radius:6px;padding:6px 8px;font-size:12px;background:#f1f1f1;text-align:right"></div>
                 <div style="display:flex;flex-direction:column;gap:3px"><label style="font-size:11px;color:#666;font-weight:600">출고수량</label><input id="spQty" type="number" placeholder="0" style="width:100px;border:1px solid #ddd;border-radius:6px;padding:6px 8px;font-size:12px;text-align:right"></div>
                 <div style="display:flex;flex-direction:column;gap:3px"><label style="font-size:11px;color:#666;font-weight:600">출고예정일</label><input id="spDate" type="date" value="2026-07-05" style="width:150px;border:1px solid #ddd;border-radius:6px;padding:6px 8px;font-size:12px"></div>
-                <div style="display:flex;flex-direction:column;gap:3px"><label style="font-size:11px;color:#666;font-weight:600">출고 타입</label><select id="spType" style="width:120px;border:1px solid #ddd;border-radius:6px;padding:6px 8px;font-size:12px"><option value="deliver" selected>배송</option><option value="pickup">픽업(회수)</option><option value="sample">샘플 전달</option><option value="return">자재 회수</option><option value="parcel">택배 지정</option><option value="direct-ship">업체 직발송</option></select></div>
+                <div style="display:flex;flex-direction:column;gap:3px"><label style="font-size:11px;color:#666;font-weight:600">출고 타입</label><select id="spType" style="width:120px;border:1px solid #ddd;border-radius:6px;padding:6px 8px;font-size:12px"><option value="deliver" selected>배송</option><option value="pickup">픽업(회수)</option><option value="sample">샘플 전달</option><option value="return">자재 회수</option><option value="reverse">거래처 반품</option><option value="parcel">택배 지정</option><option value="direct-ship">업체 직발송</option></select></div>
                 <div style="display:flex;flex-direction:column;gap:3px"><label style="font-size:11px;color:#666;font-weight:600">특이지시 (선택)</label><input id="spNote" placeholder="예: 납품후 사장님께 전화" style="width:190px;border:1px solid #ddd;border-radius:6px;padding:6px 8px;font-size:12px"></div>
                 <button onclick="spRegister()" style="background:#FF6B35;color:#fff;border:none;border-radius:6px;padding:8px 14px;font-size:12px;font-weight:bold;cursor:pointer">＋ 출고계획 등록</button>
               </div>
@@ -1611,6 +1622,14 @@ select.form-control { cursor: pointer; }
       </div><!-- /scr-shipplanlist -->
       <!-- 출고 지시 (흐름도 신규) -->
       <div class="screen" id="scr-shiporder">
+        <div style="background:#fff4ea;border:1px solid #FFCFA3;border-radius:10px;padding:12px 16px;margin-bottom:14px;display:flex;align-items:center;gap:10px">
+          <div style="font-size:20px">🚛</div>
+          <div style="flex:1">
+            <div style="font-size:13px;font-weight:bold;color:#7a3d00">이 화면은 참조용입니다</div>
+            <div style="font-size:12px;color:#7a3d00;margin-top:2px">실제 출고 지시(진행/확정)는 <b>🚛 배차 보드</b>에서 [✓ 배차 확정] 시 자동으로 처리됩니다. 이 화면은 기존 데이터 조회용입니다.</div>
+          </div>
+          <button onclick="selectMenu(document.querySelector('.menu-item[onclick*=dispatch]'),'dispatch')" style="background:#FF6B35;color:#fff;border:none;border-radius:6px;padding:7px 12px;font-size:12px;font-weight:bold;cursor:pointer;white-space:nowrap">배차 보드 →</button>
+        </div>
         <div style="display:grid;grid-template-columns:1fr;gap:0;min-height:420px;border:1px solid #e0e0e0;border-radius:10px;overflow:hidden;background:white;box-shadow:0 2px 8px rgba(0,0,0,0.06)">
           <div style="display:flex;flex-direction:column;background:white">
             <div style="padding:14px 20px;border-bottom:1px solid #efefef;display:flex;align-items:center;justify-content:space-between">
@@ -12106,6 +12125,17 @@ function dispOpenOne(id, e){
 
       <div class="one-sec">${isPickup?'차량 지정':'차량 직접 지정'}</div>
       <div class="one-truckpick">${truckBtns}</div>
+
+      <div class="one-sec">최근 배송 이력</div>
+      <div style="max-height:180px;overflow:auto">
+        ${(window.DISP_HISTORY && DISP_HISTORY[o.cust] && DISP_HISTORY[o.cust].length)
+          ? DISP_HISTORY[o.cust].slice(0,5).map(h=>`
+            <div style="display:flex;justify-content:space-between;gap:8px;padding:6px 0;border-bottom:1px solid #eef1f5;font-size:12px">
+              <div><div style="color:#5c6672">${h.date.replace(/\s*(오전|오후).*$/,'')}</div><div>${h.item}</div></div>
+              <div style="text-align:right;color:#5c6672"><div>${h.truck}</div><div class="tnum">${h.boxes}박스 · ${h.weightKg}kg</div></div>
+            </div>`).join('')
+          : '<div style="font-size:12px;color:#8a929c;padding:8px 2px">최근 이력 없음 (배차 확정 시 누적)</div>'}
+      </div>
     </div>
 
     <div class="one-foot">
@@ -12139,11 +12169,13 @@ function dispOrderCard(o, seq){
   el.addEventListener('click', e=> dispOpenOne(o.id, e));
   const seqHtml = seq ? `<span class="seq tnum">${seq}</span>` : '';
   const zoneClass = o.zone === '미지정' ? 'badge warn' : 'badge zone';
-  const badge = o.type==='pickup'
-    ? `<span class="badge pickup">픽업</span>`
-    : (o.urgent
-        ? `<span class="badge urg">긴급</span>`
-        : `<span class="${zoneClass}">${o.zone}</span>`);
+  const badge = o.type==='reverse'
+    ? `<span class="disp-badge-reverse">반품</span>`
+    : (o.type==='pickup'
+        ? `<span class="badge pickup">픽업</span>`
+        : (o.urgent
+            ? `<span class="badge urg">긴급</span>`
+            : `<span class="${zoneClass}">${o.zone}</span>`));
   el.innerHTML =
     `<div class="ord-top"><span class="cust">${o.cust}</span>${seq?seqHtml:badge}</div>`+
     `<div class="to">▸ ${o.deliverTo||''}</div>`+
@@ -12155,6 +12187,14 @@ function dispOrderCard(o, seq){
       `${o.note?'<span class="chip-note">! 특이</span>':''}`+
       `${o.done?'<span class="chip-done">★완료</span>':''}`+
     `</div>`;
+  // U-2: 긴급 삽입 버튼 (미배차 풀에 있고 긴급 + 배차 확정 후에만) — innerHTML 할당 뒤에 붙여야 지워지지 않음
+  if(o.urgent && dispState[o.id]==='pool' && DISP_CONFIRMED){
+    const btn = document.createElement('span');
+    btn.textContent = '🔥 긴급 삽입';
+    btn.style = 'position:absolute;top:6px;right:7px;font-size:10.5px;font-weight:600;padding:3px 7px;border-radius:6px;background:#b23b30;color:#fff;cursor:pointer;z-index:2';
+    btn.onclick = e => { e.stopPropagation(); dispInsertUrgent(o.id); };
+    el.appendChild(btn);
+  }
   el.addEventListener('dragstart',e=>{ e.dataTransfer.setData('text',o.id); el.classList.add('dragging'); });
   el.addEventListener('dragend',()=> el.classList.remove('dragging'));
   return el;
@@ -12257,6 +12297,14 @@ function dispAuto(){
     });
     if(t) dispState[o.id] = t.id;
   });
+  // 반품: 픽업과 동일하게 같은 권역 도는 차에 편승
+  DISP_ORDERS.filter(o=>o.type==='reverse' && dispState[o.id]==='pool').forEach(o=>{
+    const t = DISP_TRUCKS.find(t=>{
+      const hasZoneStop = DISP_ORDERS.some(x=> dispState[x.id]===t.id && x.zone===o.zone);
+      return hasZoneStop && fits(t.id, o);
+    });
+    if(t) dispState[o.id] = t.id;
+  });
   DISP_ORDERS.filter(o=>dispState[o.id]==='pool').forEach(o=>{
     const t = DISP_TRUCKS.find(t=>fits(t.id,o));
     dispState[o.id] = t ? t.id : 'charter';
@@ -12285,8 +12333,67 @@ function dispConfirm(){
     charter: DISP_ORDERS.filter(o=>dispState[o.id]==='charter').map(o=>({...o})),
     direct:  DISP_ORDERS.filter(o=>dispState[o.id]==='direct').map(o=>({...o}))
   };
+  // U-4: 거래처별 히스토리 누적
+  if(!window.DISP_HISTORY) window.DISP_HISTORY = {};
+  DISP_CONFIRMED.trucks.forEach(t=>{
+    t.stops.forEach(o=>{
+      if(!DISP_HISTORY[o.cust]) DISP_HISTORY[o.cust] = [];
+      DISP_HISTORY[o.cust].unshift({
+        date: DISP_CONFIRMED.at,
+        truck: t.name+' '+t.driver,
+        item: o.item,
+        boxes: o.boxes,
+        weightKg: o.weightKg,
+        type: o.type||'deliver',
+        planNo: o.planNo||'-'
+      });
+      if(DISP_HISTORY[o.cust].length > 20) DISP_HISTORY[o.cust].length = 20;
+    });
+  });
+  const reverseCount = DISP_ORDERS.filter(o=>o.type==='reverse' && dispState[o.id]!=='pool').length;
+  if(reverseCount && window.mesAddNotif){
+    mesAddNotif({type:'info',icon:'📦',title:'반품 회수 예정',desc:reverseCount+'건 반품 회수 예정 · 복귀 시 창고 재입고 처리 필요'});
+  }
   dispOutTab = 'wi'; dispRenderConfirmed(); d$('disp-outModal').classList.add('show');
 }
+
+/* ===== U-2: 긴급 오더 삽입 (확정 후 끼워넣기) ===== */
+window.dispInsertUrgent = function(id){
+  if(!DISP_CONFIRMED){ alert('배차 확정 후 사용할 수 있습니다.'); return; }
+  const o = DISP_ORDERS.find(x=>x.id===id);
+  if(!o) return;
+
+  // 같은 권역 도는 차를 찾고, 없으면 여유 있는 차 아무거나
+  let target = null;
+  for(const t of DISP_TRUCKS){
+    const truckOrders = DISP_ORDERS.filter(x => dispState[x.id]===t.id);
+    if(truckOrders.some(x => x.zone===o.zone) && dispTruckLoad(t.id)+o.weightKg<=DISP_CONFIG.capacityKg){
+      target = t; break;
+    }
+  }
+  if(!target){
+    for(const t of DISP_TRUCKS){
+      if(dispTruckLoad(t.id)+o.weightKg<=DISP_CONFIG.capacityKg){ target = t; break; }
+    }
+  }
+  if(!target){ alert('여유 있는 차량이 없습니다. 용차로 전환하세요.'); return; }
+
+  dispState[id] = target.id;
+
+  // 확정 스냅샷도 갱신 (긴급 건을 해당 차 stops 맨 앞에 삽입)
+  const t = DISP_CONFIRMED.trucks.find(x=>x.name===target.name);
+  if(t){
+    t.stops.unshift({...o, isInserted:true});
+    t.load += o.weightKg;
+    t.boxes += (o.boxes||0);
+  }
+
+  dispRender();
+  dispRenderConfirmed();
+
+  if(window.mesToast) mesToast({icon:'🔥',title:'긴급 삽입 완료',desc:o.cust+' → '+target.name+' ('+target.driver+') 첫 순서 삽입',actions:'<button class="tp-btn ghost" data-tp="dismiss">닫기</button>'});
+};
+
 let dispOutTab = 'wi';
 function dispSwitchOut(tab){
   dispOutTab = tab;
@@ -12301,16 +12408,16 @@ function dispRenderConfirmed(){
     const docs = c.trucks.filter(t=>t.stops.length).map(t=>{
       const rows = t.stops.map((o,i)=>
         `<tr>
-          <td class="wi-seq">${i+1}</td>
+          <td class="wi-seq">${o.isInserted?'<span style="color:#b23b30">🔥</span>':(i+1)}</td>
           <td>
-            <div class="wi-cust">${o.cust}${o.type==='pickup'?'<span class="wi-pickup">픽업</span>':''}${o.location&&o.location!=='창고'&&o.location!=='-'?`<span class="wi-loc" style="background:${dispLocStyle(o.location)}">${o.location}</span>`:''}</div>
+            <div class="wi-cust">${o.cust}${o.type==='pickup'?'<span class="wi-pickup">픽업</span>':''}${o.type==='reverse'?'<span class="wi-reverse">반품</span>':''}${o.location&&o.location!=='창고'&&o.location!=='-'?`<span class="wi-loc" style="background:${dispLocStyle(o.location)}">${o.location}</span>`:''}</div>
             <div class="wi-to">▸ ${o.deliverTo||''} · ${o.address||''}</div>
             ${o.note?`<div class="wi-note">⚠ ${o.note}</div>`:''}
           </td>
           <td class="wi-item">${o.item}<br><span style="color:var(--muted);font-size:11.5px">${o.qty.toLocaleString()}${o.unit} · ${o.machine||''}</span></td>
           <td class="wi-box"><b class="tnum">${o.boxes||'-'}</b><span>박스</span></td>
           <td class="wi-kg tnum">${o.weightKg.toLocaleString()}kg</td>
-          <td class="wi-chk">☐</td>
+          <td class="wi-chk"><button onclick="dispProofOpen('${o.id}','${t.name}')" style="border:none;background:transparent;cursor:pointer;font-size:17px;color:${o.proof?'var(--ok)':'var(--faint)'}" title="${o.proof?'완료됨':'완료 기록'}">${o.proof?'✅':'☐'}</button></td>
         </tr>`).join('');
       return `<div class="wi">
         <div class="wi-top">
@@ -12346,6 +12453,50 @@ function dispRenderConfirmed(){
     d$('disp-outBody').innerHTML = html;
   }
 }
+/* ===== U-3: 납품 완료 증빙 (사진·서명 시뮬) ===== */
+let DISP_PROOF_TARGET = null;
+
+window.dispProofOpen = function(orderId, truckName){
+  DISP_PROOF_TARGET = { orderId, truckName };
+  const o = DISP_ORDERS.find(x=>x.id===orderId);
+  if(!o) return;
+  d$('disp-proof-title').textContent = '납품 완료 기록';
+  d$('disp-proof-sub').textContent = o.cust + ' · ' + o.item;
+  d$('disp-proof-sign').value = o.proof?.sign || '';
+  d$('disp-proof-memo').value = o.proof?.memo || '';
+  d$('disp-proof-preview').innerHTML = o.proof?.photo ? `<img src="${o.proof.photo}" style="max-width:100%;border-radius:8px">` : '';
+  d$('disp-proof-photo').onchange = e => {
+    const f = e.target.files[0]; if(!f) return;
+    const r = new FileReader();
+    r.onload = ev => { d$('disp-proof-preview').innerHTML = `<img src="${ev.target.result}" style="max-width:100%;border-radius:8px">`; };
+    r.readAsDataURL(f);
+  };
+  d$('disp-proofModal').classList.add('show');
+};
+window.dispProofClose = function(){ d$('disp-proofModal').classList.remove('show'); DISP_PROOF_TARGET = null; };
+window.dispProofSave = function(){
+  if(!DISP_PROOF_TARGET) return;
+  const o = DISP_ORDERS.find(x=>x.id===DISP_PROOF_TARGET.orderId);
+  if(!o) return;
+  const preview = d$('disp-proof-preview').querySelector('img');
+  o.proof = {
+    photo: preview?preview.src:null,
+    sign: d$('disp-proof-sign').value.trim(),
+    memo: d$('disp-proof-memo').value.trim(),
+    at: new Date().toLocaleString('ko-KR')
+  };
+  // 확정 스냅샷의 stop에도 반영
+  if(DISP_CONFIRMED){
+    DISP_CONFIRMED.trucks.forEach(t=>{
+      const st = t.stops.find(s=>s.id===o.id);
+      if(st) st.proof = o.proof;
+    });
+  }
+  dispProofClose();
+  dispRenderConfirmed();
+  if(window.mesToast) mesToast({icon:'✅',title:'납품 완료 기록',desc:o.cust+' 완료 기록 저장',actions:'<button class="tp-btn ghost" data-tp="dismiss">닫기</button>'});
+};
+
 function dispCloseOut(){ d$('disp-outModal').classList.remove('show'); }
 function dispPrintOut(){
   document.body.classList.add('disp-printing');
@@ -12424,6 +12575,7 @@ window.dispAddFromShipPlan = function(planNo, cust, item, qty, date){
   };
   if(type === 'pickup')  newOrder.type = 'pickup';
   if(type === 'return'){ newOrder.type = 'pickup'; newOrder.note = (note?note+' · ':'') + '자재 회수'; }
+  if(type === 'reverse'){ newOrder.type = 'reverse'; newOrder.note = (note?note+' · ':'') + '반품 회수 → 창고 재입고'; }
   if(type === 'sample'){ newOrder.note = (note?note+' · ':'') + '샘플 전달'; newOrder.boxes = 1; newOrder.weightKg = 5; }
   if(type === 'parcel')  newOrder.defaultType = 'parcel';
 
@@ -12444,6 +12596,35 @@ dispRenderChips();
 dispAuto();
 </script>
 
+<!-- ===== U-3 납품 완료 증빙 모달 ===== -->
+  <div class="disp-modal" id="disp-proofModal" onclick="if(event.target===this)dispProofClose()">
+    <div class="one-box" style="max-width:400px">
+      <div class="one-head">
+        <div class="one-title">
+          <div><h3 id="disp-proof-title">납품 완료 기록</h3>
+            <div class="one-sub" id="disp-proof-sub"></div></div>
+          <span class="one-x" onclick="dispProofClose()">✕</span>
+        </div>
+      </div>
+      <div class="one-scroll">
+        <div class="one-sec">사진</div>
+        <input type="file" id="disp-proof-photo" accept="image/*" style="width:100%;font-size:12px;padding:6px;border:1px dashed #ccc;border-radius:8px">
+        <div id="disp-proof-preview" style="margin-top:8px"></div>
+        <div class="one-sec">서명 (인수자명)</div>
+        <input type="text" id="disp-proof-sign" placeholder="예: 김대리" style="width:100%;padding:8px 10px;border:1px solid #e4e8ee;border-radius:7px;font-size:13px">
+        <div class="one-sec">비고</div>
+        <textarea id="disp-proof-memo" placeholder="특이사항이 있으면 기록" style="width:100%;padding:8px 10px;border:1px solid #e4e8ee;border-radius:7px;font-size:13px;min-height:60px;resize:vertical"></textarea>
+      </div>
+      <div class="one-foot">
+        <div class="left"></div>
+        <div class="right">
+          <button onclick="dispProofClose()">취소</button>
+          <button class="primary" style="background:#2c7a54;border-color:#2c7a54;color:#fff" onclick="dispProofSave()">✓ 완료 기록</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
 <!-- ===== T-3 피킹 리스트: 모달 (pick-) ===== -->
   <div class="pick-modal" id="pick-qrModal" onclick="if(event.target===this)pickCloseQr()">
     <div class="modal-box">
@@ -12461,6 +12642,18 @@ dispAuto();
       <button class="primary" onclick="pickSimulateScan()" style="width:100%">랜덤 스캔 (시뮬레이션)</button>
     </div>
   </div>
+
+<!-- ===== V: 완제품 출고 배너 유지 (PLIST build()가 innerHTML을 다시 그려도 재삽입) ===== -->
+<script>
+(function(){
+  var scr = document.getElementById('scr-fgout'); if(!scr) return;
+  var banner = document.getElementById('fgout-banner'); if(!banner) return;
+  var html = banner.outerHTML;
+  function ensure(){ if(!document.getElementById('fgout-banner')) scr.insertAdjacentHTML('afterbegin', html); }
+  if(window.MutationObserver) new MutationObserver(ensure).observe(scr, {childList:true});
+  setTimeout(ensure, 80);
+})();
+</script>
 
 <!-- ===== T-3 피킹 리스트: 스크립트 (DISP_ORDERS 공유) ===== -->
 <script>
