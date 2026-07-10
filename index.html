@@ -575,6 +575,9 @@ select.form-control { cursor: pointer; }
 .disp-modal .wi-tbl tr:last-child td{border-bottom:none}
 .disp-modal .wi-seq{width:34px; text-align:center; font-size:16px; font-weight:700; color:var(--accent)}
 .disp-modal .wi-cust{font-size:14.5px; font-weight:600}
+.disp-modal .wi-progress-badge{display:inline-block;font-size:11.5px;font-weight:700;padding:3px 10px;border-radius:999px;color:#fff;margin-left:10px;vertical-align:middle}
+.disp-modal .wi-nextstop{font-size:12px;color:rgba(255,255,255,.85);font-weight:500;margin-top:4px}
+.disp-modal .wi-arrived{display:inline-block;font-size:10.5px;font-weight:700;padding:2px 8px;border-radius:999px;background:#e6f3ec;color:#2c7a54;margin-left:8px}
 .disp-modal .wi-to{font-size:12px; color:var(--muted); margin-top:2px}
 .disp-modal .wi-note{color:var(--danger); font-size:12px; font-weight:600; margin-top:3px}
 .disp-modal .wi-item{font-size:12.5px; color:var(--ink)}
@@ -603,6 +606,269 @@ select.form-control { cursor: pointer; }
   body.disp-printing #disp-outModal .no-print{display:none !important}
   body.disp-printing #disp-outModal .wi{break-inside:avoid}
 }
+</style>
+<style id="disp-toss-css">
+/* ===== W: 토스 감성 UI 리프레시 (배차·피킹·disp 모달 한정 오버라이드) ===== */
+
+/* 1. 배차 헤더·통계 카드 */
+#scr-dispatch .stat{background:#fff;border:none;border-radius:16px;padding:14px 18px;text-align:left;box-shadow:0 2px 10px rgba(24,36,54,.05);min-width:88px}
+#scr-dispatch .stat b{font-size:22px;font-weight:700;display:block;line-height:1.15;letter-spacing:-.02em;color:#1b2430}
+#scr-dispatch .stat span{font-size:11.5px;color:#8a929c;font-weight:500;margin-top:2px;display:block}
+#scr-dispatch .bar h1{font-size:22px;font-weight:700;margin:0;letter-spacing:-.02em;color:#1b2430}
+#scr-dispatch .bar .sub{font-size:13px;color:#8a929c;margin-top:4px;font-weight:500}
+
+/* 2. 배차 버튼 */
+#scr-dispatch button{font-family:inherit;font-size:13.5px;font-weight:600;cursor:pointer;border-radius:12px;border:none;background:#f4f6f9;color:#1b2430;padding:11px 16px;box-shadow:none;transition:all .15s ease}
+#scr-dispatch button:hover{background:#eceff5;transform:translateY(-1px)}
+#scr-dispatch button:active{transform:scale(.98)}
+#scr-dispatch button.primary{background:#FF6B35;color:#fff}
+#scr-dispatch button.primary:hover{background:#f25a20}
+#scr-dispatch button.ghost{background:transparent;color:#5c6672}
+#scr-dispatch button.ghost:hover{background:#f4f6f9}
+
+/* 3. 규칙 패널 */
+#scr-dispatch .rules{background:#fff;border:none;border-radius:18px;padding:18px 22px;margin-bottom:22px;box-shadow:0 2px 12px rgba(24,36,54,.05)}
+#scr-dispatch .rules-head{font-size:11.5px;font-weight:700;color:#8a929c;letter-spacing:.06em;text-transform:uppercase;margin-bottom:14px}
+#scr-dispatch .chip{display:inline-flex;align-items:center;gap:6px;font-size:13px;font-weight:500;padding:8px 14px;border-radius:999px;border:1.5px solid #eceff5;background:#fff;color:#5c6672;cursor:pointer;transition:all .15s}
+#scr-dispatch .chip.on{background:#fff4ea;border-color:#FF6B35;color:#c04a12;font-weight:600}
+#scr-dispatch .chip.on .dot{background:#FF6B35}
+#scr-dispatch .chip:hover{transform:translateY(-1px)}
+
+/* 4. 미배차 풀 · 차량 카드 */
+#scr-dispatch .lane{background:#f4f6f9;border:none;border-radius:16px;padding:14px;min-height:80px}
+#scr-dispatch .lane.pool{background:#f4f6f9;min-height:220px}
+#scr-dispatch .lane.over{background:#fff4ea;outline:2px solid #FF6B35;outline-offset:-2px}
+#scr-dispatch .truck{background:#fff;border:none;border-radius:18px;padding:18px;box-shadow:0 2px 12px rgba(24,36,54,.05);transition:all .18s}
+#scr-dispatch .truck.over{box-shadow:0 4px 20px rgba(255,107,53,.15);transform:translateY(-2px)}
+#scr-dispatch .truck-head .name{font-size:15px;font-weight:700;letter-spacing:-.01em}
+#scr-dispatch .truck-head .home{font-size:11.5px;color:#8a929c;font-weight:500}
+#scr-dispatch .gauge{height:8px;border-radius:999px;background:#f0f2f5;margin:12px 0 6px}
+#scr-dispatch .gauge > i{border-radius:999px;transition:width .4s ease}
+#scr-dispatch .load{font-size:12px;color:#5c6672;font-weight:500;margin-bottom:12px}
+#scr-dispatch .route{font-size:11.5px;color:#5c6672;background:#f8f9fb;border-radius:10px;padding:8px 12px;margin-bottom:12px;font-weight:500}
+#scr-dispatch .route b{color:#1b2430;font-weight:700}
+
+/* 5. 주문 카드 */
+#scr-dispatch .ord{background:#fff;border:1px solid #f0f2f5;border-radius:14px;padding:12px 14px;cursor:grab;box-shadow:0 1px 3px rgba(24,36,54,.04);transition:all .12s}
+#scr-dispatch .ord:hover{border-color:#e4e8ee;transform:translateY(-1px);box-shadow:0 3px 12px rgba(24,36,54,.06)}
+#scr-dispatch .ord.dragging{opacity:.35;transform:scale(.98)}
+#scr-dispatch .ord.urgent{border-color:#fbc9c1;background:#fdf3f1}
+#scr-dispatch .ord .cust{font-size:14px;font-weight:700;letter-spacing:-.02em}
+#scr-dispatch .ord .item{font-size:12px;color:#5c6672;font-weight:500;margin-top:3px}
+#scr-dispatch .ord .meta{font-size:11.5px;color:#8a929c;margin-top:6px;font-weight:500}
+#scr-dispatch .ord .meta b{color:#1b2430;font-weight:700}
+#scr-dispatch .badge{font-size:10.5px;font-weight:700;padding:3px 9px;border-radius:999px;letter-spacing:.02em}
+#scr-dispatch .seq{width:22px;height:22px;font-size:11.5px;font-weight:700;background:#FF6B35}
+#scr-dispatch .ord-note{font-size:11.5px;color:#b23b30;background:#fdf3f1;border-radius:8px;padding:5px 9px;margin-top:7px;line-height:1.4;font-weight:500}
+
+/* 6. 통합 팝업 — 토스 감성 핵심 (z-index는 통합본 UI 위에 뜨도록 10005 유지) */
+.disp-modal{display:none;position:fixed;inset:0;background:rgba(24,36,54,.4);z-index:10005;align-items:center;justify-content:center;padding:24px;backdrop-filter:blur(4px);-webkit-backdrop-filter:blur(4px);animation:dispModalFade .18s ease}
+.disp-modal.show{display:flex}
+@keyframes dispModalFade{from{opacity:0}to{opacity:1}}
+.disp-modal .one-box{background:#fff;border-radius:24px;width:min(480px,94vw);box-shadow:0 24px 60px rgba(24,36,54,.2);overflow:hidden;max-height:88vh;display:flex;flex-direction:column;animation:dispModalSlide .22s cubic-bezier(.2,.9,.3,1)}
+@keyframes dispModalSlide{from{opacity:0;transform:translateY(20px) scale(.96)}to{opacity:1;transform:none}}
+.disp-modal .one-head{padding:24px 24px 18px;border-bottom:1px solid #f0f2f5}
+.disp-modal .one-title h3{margin:0;font-size:20px;font-weight:700;letter-spacing:-.02em}
+.disp-modal .one-sub{font-size:13px;color:#8a929c;margin-top:5px;font-weight:500}
+.disp-modal .one-x{cursor:pointer;color:#8a929c;font-size:18px;padding:4px 8px;border-radius:8px;transition:all .12s}
+.disp-modal .one-x:hover{background:#f4f6f9;color:#1b2430}
+.disp-modal .one-boxbadge{display:inline-flex;align-items:baseline;gap:6px;background:#fff4ea;color:#c04a12;border-radius:14px;padding:10px 18px;margin-top:14px}
+.disp-modal .one-boxbadge b{font-size:28px;font-weight:700;line-height:1;letter-spacing:-.02em}
+.disp-modal .one-boxbadge span{font-size:12px;font-weight:600}
+.disp-modal .one-note{font-size:13px;color:#b23b30;background:#fdf3f1;border-radius:12px;padding:12px 14px;margin-top:12px;line-height:1.45;font-weight:500}
+.disp-modal .one-scroll{padding:20px 24px 22px;overflow:auto}
+.disp-modal .one-sec{font-size:11.5px;font-weight:700;color:#8a929c;letter-spacing:.06em;text-transform:uppercase;margin:20px 0 10px}
+.disp-modal .one-sec:first-child{margin-top:0}
+.disp-modal .one-grid{display:grid;grid-template-columns:auto 1fr;gap:10px 18px;font-size:14px}
+.disp-modal .one-grid dt{color:#8a929c;font-weight:500}
+.disp-modal .one-grid dd{margin:0;text-align:right;font-weight:600;color:#1b2430}
+.disp-modal .one-cost-row{display:flex;align-items:center;gap:10px;padding:14px 16px;border:1.5px solid #f0f2f5;border-radius:14px;margin-bottom:8px;transition:all .12s}
+.disp-modal .one-cost-row.best{border-color:#FF6B35;background:#fff9f5}
+.disp-modal .one-cost-row.current{border-color:#2c7a54;background:#f1faf5}
+.disp-modal .one-cost-row .lbl{flex:1;font-weight:700;font-size:14px}
+.disp-modal .one-cost-row .lbl .tag{font-size:10.5px;font-weight:700;margin-left:8px;padding:2px 8px;border-radius:999px}
+.disp-modal .one-cost-row .lbl .tag.rec{background:#FF6B35;color:#fff}
+.disp-modal .one-cost-row .lbl .tag.now{background:#2c7a54;color:#fff}
+.disp-modal .one-cost-row .lbl .sub{font-size:12px;color:#8a929c;font-weight:500;margin-top:2px}
+.disp-modal .one-cost-row .cost{font-size:16px;font-weight:700;min-width:88px;text-align:right;letter-spacing:-.01em}
+.disp-modal .one-assign{font-size:13px;font-weight:600;padding:9px 14px;border-radius:10px;border:none;background:#f4f6f9;color:#1b2430;cursor:pointer;transition:all .12s}
+.disp-modal .one-assign:hover{background:#eceff5}
+.disp-modal .one-assign.on{background:#FF6B35;color:#fff}
+.disp-modal .one-truckpick button{font-size:12.5px;padding:8px 12px;border-radius:10px}
+.disp-modal .one-foot{padding:16px 24px;border-top:1px solid #f0f2f5;background:#fafbfc;display:flex;justify-content:space-between;gap:8px;flex-wrap:wrap}
+.disp-modal .one-foot button{font-size:13px;font-weight:600;padding:10px 14px;border-radius:10px;border:none;background:#f4f6f9;color:#1b2430;cursor:pointer;transition:all .12s}
+.disp-modal .one-foot button:hover{background:#eceff5}
+.disp-modal .one-foot .one-urgbtn.on{background:#b23b30;color:#fff}
+
+/* 7. 확정 산출물 모달 */
+.disp-modal .out-box{background:#fff;border-radius:24px;width:min(880px,96vw);box-shadow:0 24px 60px rgba(24,36,54,.2);animation:dispModalSlide .22s cubic-bezier(.2,.9,.3,1)}
+.disp-modal .out-head{padding:22px 26px 16px;border-bottom:1px solid #f0f2f5}
+.disp-modal .out-head .oh-t{font-size:19px;font-weight:700;letter-spacing:-.02em}
+.disp-modal .out-head .oh-t span{font-size:13px;color:#8a929c;font-weight:500;margin-left:10px}
+.disp-modal .out-tabs{padding:14px 26px 0;gap:8px}
+.disp-modal .out-tab{font-size:13.5px;font-weight:600;padding:10px 16px;border-radius:12px 12px 0 0;border:1.5px solid transparent;border-bottom:none;transition:all .12s}
+.disp-modal .out-tab.on{color:#c04a12;background:#fff4ea;border-color:#FF6B35}
+.disp-modal .out-body{padding:20px 26px 24px;max-height:72vh;overflow:auto}
+.disp-modal .wi{border:1.5px solid #1b2430;border-radius:16px;margin-bottom:18px;overflow:hidden}
+.disp-modal .wi-top{background:#1b2430;color:#fff;padding:14px 20px}
+.disp-modal .wi-top .wi-truck{font-size:19px;font-weight:700;letter-spacing:-.02em}
+.disp-modal .wi-top .wi-driver{font-size:13.5px;opacity:.85;margin-left:10px;font-weight:500}
+.disp-modal .wi-top .wi-sum{font-size:12.5px;opacity:.9;line-height:1.55;font-weight:500}
+.disp-modal .wi-box b{font-size:22px;font-weight:700;letter-spacing:-.01em}
+.disp-modal .wi-seq{font-size:17px;font-weight:700;color:#FF6B35}
+.disp-modal .wi-cust{font-size:15px;font-weight:700;letter-spacing:-.01em}
+
+/* 8. 피킹 리스트 */
+#scr-picking .progress{background:#fff;border:none;border-radius:18px;padding:18px 22px;margin-bottom:20px;box-shadow:0 2px 12px rgba(24,36,54,.05)}
+#scr-picking .progress-h b{font-size:15px;font-weight:700}
+#scr-picking .progress-bar{height:10px;border-radius:999px;background:#f0f2f5}
+#scr-picking .progress-bar > i{border-radius:999px;transition:width .5s ease}
+#scr-picking .pick{display:grid;grid-template-columns:48px 1fr auto auto;align-items:center;gap:16px;background:#fff;border:1px solid #f0f2f5;border-radius:16px;padding:14px 18px;box-shadow:0 1px 4px rgba(24,36,54,.04);transition:all .15s}
+#scr-picking .pick:hover{transform:translateY(-1px);box-shadow:0 3px 12px rgba(24,36,54,.06)}
+#scr-picking .pick.done{opacity:.55;background:#f1faf5;border-color:#c3e2d1}
+#scr-picking .pick-chk{width:36px;height:36px;border:2px solid #cfd6df;border-radius:10px;font-size:20px;color:transparent}
+#scr-picking .pick.done .pick-chk{background:#2c7a54;border-color:#2c7a54;color:#fff}
+#scr-picking .p-main b{font-size:15px;font-weight:700;letter-spacing:-.01em}
+
+/* ===== X-2: 배차 확정 목록 ===== */
+#scr-dispatchlist .dl-wrap{max-width:1220px;margin:0 auto;padding:22px 22px 60px}
+#scr-dispatchlist .dl-bar{display:flex;align-items:flex-start;justify-content:space-between;gap:16px;flex-wrap:wrap;margin-bottom:22px}
+#scr-dispatchlist .dl-title{font-size:22px;font-weight:700;letter-spacing:-.02em;color:#1b2430}
+#scr-dispatchlist .dl-sub{font-size:13px;color:#8a929c;margin-top:4px;font-weight:500}
+#scr-dispatchlist .dl-stats{display:flex;gap:10px;flex-wrap:wrap}
+#scr-dispatchlist .dl-stat{background:#fff;border-radius:16px;padding:14px 20px;box-shadow:0 2px 10px rgba(24,36,54,.05);min-width:100px}
+#scr-dispatchlist .dl-stat b{display:block;font-size:22px;font-weight:700;line-height:1.15;letter-spacing:-.02em;color:#1b2430}
+#scr-dispatchlist .dl-stat span{font-size:11.5px;color:#8a929c;font-weight:500;margin-top:2px;display:block}
+#scr-dispatchlist .dl-card{background:#fff;border:1px solid #f0f2f5;border-radius:18px;padding:22px 26px;margin-bottom:14px;box-shadow:0 2px 12px rgba(24,36,54,.05);cursor:pointer;transition:all .16s;display:grid;grid-template-columns:auto 1fr auto;gap:22px;align-items:center}
+#scr-dispatchlist .dl-card:hover{transform:translateY(-2px);box-shadow:0 6px 20px rgba(24,36,54,.08);border-color:#e4e8ee}
+#scr-dispatchlist .dl-card.today{border-color:#FF6B35;background:#fff9f5}
+#scr-dispatchlist .dl-date{text-align:center;padding:0 8px 0 0;border-right:1px solid #f0f2f5;min-width:80px}
+#scr-dispatchlist .dl-date .dl-md{font-size:26px;font-weight:700;letter-spacing:-.02em;line-height:1.05;color:#1b2430}
+#scr-dispatchlist .dl-date .dl-y{font-size:12px;color:#8a929c;font-weight:500;margin-top:4px}
+#scr-dispatchlist .dl-date .dl-dow{font-size:11px;font-weight:600;color:#FF6B35;margin-top:3px}
+#scr-dispatchlist .dl-info{flex:1}
+#scr-dispatchlist .dl-info-top{display:flex;align-items:center;gap:8px;margin-bottom:8px;flex-wrap:wrap}
+#scr-dispatchlist .dl-tag{font-size:10.5px;font-weight:700;padding:3px 9px;border-radius:999px;background:#f4f6f9;color:#5c6672}
+#scr-dispatchlist .dl-tag.today{background:#FF6B35;color:#fff}
+#scr-dispatchlist .dl-tag.refine{background:#fff4ea;color:#c04a12}
+#scr-dispatchlist .dl-summary{display:flex;gap:22px;font-size:13px;color:#5c6672;font-weight:500;flex-wrap:wrap}
+#scr-dispatchlist .dl-summary b{color:#1b2430;font-weight:700}
+#scr-dispatchlist .dl-trucks{display:flex;gap:6px;margin-top:10px;flex-wrap:wrap}
+#scr-dispatchlist .dl-truck-chip{font-size:11.5px;font-weight:600;padding:4px 10px;border-radius:999px;background:#f4f6f9;color:#5c6672}
+#scr-dispatchlist .dl-truck-chip.empty{opacity:.4}
+#scr-dispatchlist .dl-savedat{font-size:11.5px;color:#8a929c;margin-top:6px;font-weight:500}
+#scr-dispatchlist .dl-arrow{font-size:24px;color:#cfd6df;transition:transform .16s}
+#scr-dispatchlist .dl-card:hover .dl-arrow{transform:translateX(3px);color:#FF6B35}
+#scr-dispatchlist .dl-empty{background:#fff;border-radius:18px;padding:60px 40px;text-align:center;color:#8a929c;box-shadow:0 2px 10px rgba(24,36,54,.05)}
+#scr-dispatchlist .dl-empty .em{font-size:40px;margin-bottom:14px}
+#scr-dispatchlist .dl-empty .t{font-size:15px;font-weight:600;color:#5c6672;margin-bottom:6px}
+#scr-dispatchlist .dl-empty .s{font-size:13px;color:#8a929c}
+
+/* ===== Y-1: 기사용 화면 ===== */
+#scr-driver .drv-wrap{max-width:780px;margin:0 auto;padding:22px 22px 60px}
+#scr-driver .drv-bar{display:flex;align-items:flex-start;justify-content:space-between;gap:16px;flex-wrap:wrap;margin-bottom:22px}
+#scr-driver .drv-title{font-size:22px;font-weight:700;letter-spacing:-.02em;color:#1b2430}
+#scr-driver .drv-sub{font-size:13px;color:#8a929c;margin-top:4px;font-weight:500}
+#scr-driver .drv-driver-pick{background:#fff;border-radius:14px;padding:12px 16px;box-shadow:0 2px 10px rgba(24,36,54,.05)}
+#scr-driver .drv-driver-pick label{display:block;font-size:11px;color:#8a929c;font-weight:600;margin-bottom:5px}
+#scr-driver .drv-driver-pick select{border:none;background:transparent;font-size:15px;font-weight:600;font-family:inherit;outline:none;cursor:pointer;color:#1b2430;min-width:160px}
+#scr-driver .drv-summary{background:#1b2430;color:#fff;border-radius:18px;padding:20px 24px;margin-bottom:16px;display:grid;grid-template-columns:1fr auto;gap:14px;align-items:center}
+#scr-driver .drv-summary .h{font-size:16px;font-weight:700;letter-spacing:-.01em;margin-bottom:4px}
+#scr-driver .drv-summary .s{font-size:12.5px;opacity:.85;font-weight:500}
+#scr-driver .drv-summary .stats{text-align:right;font-size:12px;opacity:.9;line-height:1.6}
+#scr-driver .drv-summary .stats b{font-size:15px;font-weight:700}
+#scr-driver .drv-progress{background:#fff;border-radius:14px;padding:14px 18px;margin-bottom:20px;box-shadow:0 2px 10px rgba(24,36,54,.05)}
+#scr-driver .drv-progress-h{display:flex;justify-content:space-between;font-size:12.5px;font-weight:600;color:#5c6672;margin-bottom:8px}
+#scr-driver .drv-progress-bar{height:8px;background:#f0f2f5;border-radius:999px;overflow:hidden}
+#scr-driver .drv-progress-bar>i{display:block;height:100%;background:#2c7a54;border-radius:999px;transition:width .4s}
+#scr-driver .drv-actions{display:flex;gap:8px;margin-bottom:18px;flex-wrap:wrap}
+#scr-driver .drv-actions button{flex:1;min-width:140px;padding:14px 20px;font-size:14px;font-weight:700;border-radius:14px;border:none;cursor:pointer;transition:all .12s;font-family:inherit}
+#scr-driver .drv-btn-depart{background:#FF6B35;color:#fff}
+#scr-driver .drv-btn-depart:hover{background:#f25a20}
+#scr-driver .drv-btn-return{background:#f4f6f9;color:#5c6672}
+#scr-driver .drv-btn-return:hover{background:#eceff5}
+#scr-driver .drv-btn-done{background:#2c7a54;color:#fff;pointer-events:none}
+#scr-driver .drv-stop{background:#fff;border-radius:16px;padding:16px 20px;margin-bottom:10px;box-shadow:0 2px 8px rgba(24,36,54,.04);border-left:4px solid transparent;display:grid;grid-template-columns:auto 1fr auto;gap:14px;align-items:center;transition:all .15s}
+#scr-driver .drv-stop.arrived{background:#f1faf5;border-left-color:#2c7a54;opacity:.85}
+#scr-driver .drv-stop.next{border-left-color:#FF6B35;box-shadow:0 4px 16px rgba(255,107,53,.12)}
+#scr-driver .drv-seq{font-size:24px;font-weight:700;color:#FF6B35;min-width:32px;text-align:center}
+#scr-driver .drv-stop.arrived .drv-seq{color:#2c7a54}
+#scr-driver .drv-stop-info b{font-size:16px;font-weight:700;letter-spacing:-.01em}
+#scr-driver .drv-stop-info .to{font-size:12.5px;color:#5c6672;margin-top:3px}
+#scr-driver .drv-stop-info .item{font-size:12px;color:#8a929c;margin-top:2px}
+#scr-driver .drv-stop-info .note{font-size:11.5px;color:#b23b30;background:#fdf3f1;border-radius:6px;padding:3px 8px;margin-top:5px;font-weight:600;display:inline-block}
+#scr-driver .drv-stop-btn{padding:10px 14px;font-size:13px;font-weight:700;border-radius:10px;border:none;cursor:pointer;white-space:nowrap;transition:all .12s;font-family:inherit}
+#scr-driver .drv-stop-btn.arrive{background:#FF6B35;color:#fff}
+#scr-driver .drv-stop-btn.arrive:hover{background:#f25a20}
+#scr-driver .drv-stop-btn.arrived-tag{background:#e6f3ec;color:#2c7a54;pointer-events:none;font-weight:700}
+#scr-driver .drv-empty{background:#fff;border-radius:18px;padding:60px 40px;text-align:center;color:#8a929c;box-shadow:0 2px 10px rgba(24,36,54,.05)}
+#scr-driver .drv-empty .em{font-size:40px;margin-bottom:14px}
+#scr-driver .drv-empty .t{font-size:15px;font-weight:600;color:#5c6672;margin-bottom:6px}
+#scr-driver .drv-status-badge{display:inline-block;font-size:11px;font-weight:700;padding:3px 10px;border-radius:999px;margin-left:8px}
+#scr-driver .drv-status-badge.wait{background:#f4f6f9;color:#5c6672}
+#scr-driver .drv-status-badge.on{background:#fff4ea;color:#c04a12}
+#scr-driver .drv-status-badge.done{background:#e6f3ec;color:#2c7a54}
+.drv-map-empty{background:#f4f6f9;border-radius:14px;padding:60px 20px;text-align:center;color:#8a929c;font-size:13px;font-weight:500}
+
+/* ===== Z-2: 피킹 확정 목록 ===== */
+#scr-pickinglist .pl-wrap{max-width:1220px;margin:0 auto;padding:22px 22px 60px}
+#scr-pickinglist .pl-bar{display:flex;align-items:flex-start;justify-content:space-between;gap:16px;flex-wrap:wrap;margin-bottom:22px}
+#scr-pickinglist .pl-title{font-size:22px;font-weight:700;letter-spacing:-.02em;color:#1b2430}
+#scr-pickinglist .pl-sub{font-size:13px;color:#8a929c;margin-top:4px;font-weight:500}
+#scr-pickinglist .pl-stats{display:flex;gap:10px;flex-wrap:wrap}
+#scr-pickinglist .pl-stat{background:#fff;border-radius:16px;padding:14px 20px;box-shadow:0 2px 10px rgba(24,36,54,.05);min-width:100px}
+#scr-pickinglist .pl-stat b{display:block;font-size:22px;font-weight:700;line-height:1.15;letter-spacing:-.02em;color:#1b2430}
+#scr-pickinglist .pl-stat span{font-size:11.5px;color:#8a929c;font-weight:500;margin-top:2px;display:block}
+#scr-pickinglist .pl-card{background:#fff;border:1px solid #f0f2f5;border-radius:18px;padding:22px 26px;margin-bottom:14px;box-shadow:0 2px 12px rgba(24,36,54,.05);cursor:pointer;transition:all .16s;display:grid;grid-template-columns:auto 1fr auto auto;gap:22px;align-items:center}
+#scr-pickinglist .pl-card:hover{transform:translateY(-2px);box-shadow:0 6px 20px rgba(24,36,54,.08);border-color:#e4e8ee}
+#scr-pickinglist .pl-card.today{border-color:#2c7a54;background:#f8fbf9}
+#scr-pickinglist .pl-date{text-align:center;padding:0 8px 0 0;border-right:1px solid #f0f2f5;min-width:80px}
+#scr-pickinglist .pl-date .pl-md{font-size:26px;font-weight:700;letter-spacing:-.02em;line-height:1.05;color:#1b2430}
+#scr-pickinglist .pl-date .pl-y{font-size:12px;color:#8a929c;font-weight:500;margin-top:4px}
+#scr-pickinglist .pl-date .pl-dow{font-size:11px;font-weight:600;color:#2c7a54;margin-top:3px}
+#scr-pickinglist .pl-info{flex:1}
+#scr-pickinglist .pl-info-top{display:flex;align-items:center;gap:8px;margin-bottom:8px;flex-wrap:wrap}
+#scr-pickinglist .pl-tag{font-size:10.5px;font-weight:700;padding:3px 9px;border-radius:999px;background:#f4f6f9;color:#5c6672}
+#scr-pickinglist .pl-tag.today{background:#2c7a54;color:#fff}
+#scr-pickinglist .pl-tag.reopen{background:#fff4ea;color:#c04a12}
+#scr-pickinglist .pl-tag.pending{background:#fdf3f1;color:#b23b30}
+#scr-pickinglist .pl-summary{display:flex;gap:22px;font-size:13px;color:#5c6672;font-weight:500;flex-wrap:wrap}
+#scr-pickinglist .pl-summary b{color:#1b2430;font-weight:700}
+#scr-pickinglist .pl-progress-mini{min-width:180px;padding-left:16px;border-left:1px solid #f0f2f5}
+#scr-pickinglist .pl-progress-mini .pm-h{display:flex;justify-content:space-between;font-size:11.5px;font-weight:600;color:#5c6672;margin-bottom:6px}
+#scr-pickinglist .pl-progress-mini .pm-bar{height:7px;background:#f0f2f5;border-radius:999px;overflow:hidden}
+#scr-pickinglist .pl-progress-mini .pm-bar>i{display:block;height:100%;background:#2c7a54;border-radius:999px}
+#scr-pickinglist .pl-savedat{font-size:11.5px;color:#8a929c;margin-top:6px;font-weight:500}
+#scr-pickinglist .pl-arrow{font-size:24px;color:#cfd6df;transition:transform .16s}
+#scr-pickinglist .pl-card:hover .pl-arrow{transform:translateX(3px);color:#2c7a54}
+#scr-pickinglist .pl-empty{background:#fff;border-radius:18px;padding:60px 40px;text-align:center;color:#8a929c;box-shadow:0 2px 10px rgba(24,36,54,.05)}
+#scr-pickinglist .pl-empty .em{font-size:40px;margin-bottom:14px}
+#scr-pickinglist .pl-empty .t{font-size:15px;font-weight:600;color:#5c6672;margin-bottom:6px}
+/* 상세 모달 (z-index는 통합본 UI 위에 뜨도록 10005) */
+.pl-modal{display:none;position:fixed;inset:0;background:rgba(24,36,54,.4);z-index:10005;align-items:flex-start;justify-content:center;padding:24px;backdrop-filter:blur(4px);animation:dispModalFade .18s ease}
+.pl-modal.show{display:flex}
+.pl-modal-box{background:#fff;border-radius:20px;width:min(680px,96vw);max-height:88vh;overflow:auto;box-shadow:0 24px 60px rgba(24,36,54,.2);animation:dispModalSlide .22s cubic-bezier(.2,.9,.3,1)}
+.pl-modal-head{padding:22px 26px 18px;border-bottom:1px solid #f0f2f5;display:flex;justify-content:space-between;align-items:flex-start;gap:14px}
+.pl-modal-head h3{margin:0;font-size:19px;font-weight:700;letter-spacing:-.02em}
+.pl-modal-head .sub{font-size:12.5px;color:#8a929c;margin-top:4px;font-weight:500}
+.pl-modal-head .x{cursor:pointer;color:#8a929c;font-size:18px;padding:4px 8px;border-radius:8px}
+.pl-modal-head .x:hover{background:#f4f6f9;color:#1b2430}
+.pl-modal-body{padding:20px 26px 22px}
+.pl-modal-body .sec{font-size:11.5px;font-weight:700;color:#8a929c;letter-spacing:.06em;text-transform:uppercase;margin:16px 0 10px}
+.pl-modal-body .sec:first-child{margin-top:0}
+.pl-item{display:grid;grid-template-columns:auto 1fr auto;gap:12px;align-items:center;padding:10px 14px;border:1px solid #f0f2f5;border-radius:12px;margin-bottom:6px;font-size:13px}
+.pl-item.done{background:#f1faf5;border-color:#c3e2d1}
+.pl-item .chk{width:22px;height:22px;border-radius:6px;border:1.5px solid #cfd6df;display:flex;align-items:center;justify-content:center;font-size:13px;color:transparent}
+.pl-item.done .chk{background:#2c7a54;border-color:#2c7a54;color:#fff}
+.pl-item .info b{font-weight:700}
+.pl-item .info .sub2{font-size:11.5px;color:#5c6672;margin-top:2px}
+.pl-log-item{display:flex;gap:12px;padding:8px 0;border-bottom:1px solid #f0f2f5;font-size:12.5px}
+.pl-log-item .act{min-width:70px;font-weight:700}
+.pl-log-item .act.mark{color:#2c7a54}
+.pl-log-item .act.reopen{color:#c04a12}
+.pl-log-item .act.remark{color:#FF6B35}
+.pl-log-item .det{flex:1}
+.pl-log-item .at{color:#8a929c;font-size:11.5px}
 </style>
 </head>
 <body>
@@ -779,7 +1045,10 @@ select.form-control { cursor: pointer; }
       <div class="menu-item" onclick="selectMenu(this,'shipplanreg')"><span class="menu-icon">📝</span><span style="color:#FF6B35;font-weight:bold">①</span> 출고계획 등록</div>
       <div class="menu-item" onclick="selectMenu(this,'shipplanlist')"><span class="menu-icon">📄</span><span style="color:#FF6B35;font-weight:bold">②</span> 출고계획 목록</div>
       <div class="menu-item" onclick="selectMenu(this,'picking')"><span class="menu-icon">📋</span><span style="color:#FF6B35;font-weight:bold">③</span> 피킹 리스트 <span style="background:#FF6B35;color:#fff;font-size:10px;border-radius:8px;padding:1px 6px;margin-left:4px;font-weight:bold">NEW</span></div>
+      <div class="menu-item" onclick="selectMenu(this,'pickinglist')"><span class="menu-icon">📅</span><span style="color:#FF6B35;font-weight:bold">⑦</span> 피킹 확정 목록 <span style="background:#FF6B35;color:#fff;font-size:10px;border-radius:8px;padding:1px 6px;margin-left:4px;font-weight:bold">NEW</span></div>
       <div class="menu-item" onclick="selectMenu(this,'dispatch')"><span class="menu-icon">🚛</span><span style="color:#FF6B35;font-weight:bold">④</span> 배차 보드 <span style="background:#FF6B35;color:#fff;font-size:10px;border-radius:8px;padding:1px 6px;margin-left:4px;font-weight:bold">NEW</span></div>
+      <div class="menu-item" onclick="selectMenu(this,'dispatchlist')"><span class="menu-icon">📅</span><span style="color:#FF6B35;font-weight:bold">⑤</span> 배차 확정 목록 <span style="background:#FF6B35;color:#fff;font-size:10px;border-radius:8px;padding:1px 6px;margin-left:4px;font-weight:bold">NEW</span></div>
+      <div class="menu-item" onclick="selectMenu(this,'driver')"><span class="menu-icon">🚙</span><span style="color:#FF6B35;font-weight:bold">⑥</span> 기사용 화면 <span style="background:#FF6B35;color:#fff;font-size:10px;border-radius:8px;padding:1px 6px;margin-left:4px;font-weight:bold">NEW</span></div>
       <div class="menu-item" onclick="selectMenu(this,'shiporder')" style="opacity:.75"><span class="menu-icon">📦</span>출고 지시 <span style="font-size:10px;color:#999">· 배차 보드에서 처리</span></div>
       <div class="menu-item" onclick="selectMenu(this,'fgout')" style="opacity:.75"><span class="menu-icon">🚚</span>완제품 출고 <span style="font-size:10px;color:#999">· 자동 반영</span></div>
       <div class="menu-item" onclick="selectMenu(this,'shipsched')"><span class="menu-icon">🗓️</span>납품 예정 현황</div>
@@ -1211,7 +1480,7 @@ select.form-control { cursor: pointer; }
             /* 구매/원자재 */ '구매요청 확인':'purchasereq','제조 BOM 생성':'mfgbom','자재 출고':'matout','자재 발주':'stockorder','발주(수주)':'somatorder','자재 발주 목록':'stockorder-list','입고 완료 등록':'stockin','입고 완료 목록':'stockinlist','원자재·부자재 현황':'stock','불용 자재 현황':'obsolete',
             /* 생산 */ '생산계획 등록':'prodplan','생산지시 대기목록':'wi-wait','생산지시 목록 (발행)':'wi-list','외주 관리 (출고)':'outsource','외주 입고':'outsource','생산 실적 입력':'production','작업지시 마감':'wiclose','생산완료 목록':'wi-done','불량 리스트':'defectlist','Lot 추적':'lot','설비 현황':'equip','생산 현황판':'prodstatus',
             /* 품질 */ '입고검사':'qcin','검사 결과 입력 (공정)':'qc','출하검사':'qcout','불량 이력':'defect','품질 현황':'qcstatus',
-            /* 물류 */ '완제품 입고':'fgin','제품 재고 등록':'fgstockreg','재고 목록 / 현황':'fgstocklist','출고계획 등록':'shipplanreg','출고계획 목록':'shipplanlist','출고 지시':'shiporder','완제품 출고':'fgout','납품 예정 현황':'shipsched','배차 보드':'dispatch','피킹 리스트':'picking',
+            /* 물류 */ '완제품 입고':'fgin','제품 재고 등록':'fgstockreg','재고 목록 / 현황':'fgstocklist','출고계획 등록':'shipplanreg','출고계획 목록':'shipplanlist','출고 지시':'shiporder','완제품 출고':'fgout','납품 예정 현황':'shipsched','배차 보드':'dispatch','피킹 리스트':'picking','배차 확정 목록':'dispatchlist','기사용 화면':'driver','피킹 확정 목록':'pickinglist',
             /* 시스템 */ '사용자 관리':'user','거래처 관리':'customer','품목 관리':'item','단가 관리':'pricemgmt','코드 관리':'code','공정 관리':'process','설비 관리':'equip-mgmt','부서 관리':'dept','BOM 생성':'bomcreate','Routing 생성':'bomrouting','BOM 수정':'bomedit',
             /* Dashboard */ '실시간 대시보드':'dashboard','전체/지시별 현황판 연동':'prodstatus',
             /* 그룹웨어 */ '메신저':'messenger','연락처':'contacts','일정':'calendar','자원예약':'resource','Task':'task','게시판':'board','전자결재':'approval','근태':'attendance','인사관리':'hr',
@@ -1673,7 +1942,11 @@ select.form-control { cursor: pointer; }
       <div class="stat"><b class="tnum" id="disp-s-done">0</b><span>배차 완료</span></div>
       <div class="stat"><b class="tnum" id="disp-s-pool">0</b><span>미배차</span></div>
       <div class="stat"><b class="tnum" id="disp-s-ready">0</b><span>출고가능</span></div>
-      <button onclick="selectMenu(document.querySelector('.menu-item[onclick*=picking]'),'picking')" style="border-color:#c3e2d1;background:#e6f3ec;color:#2c7a54;font-weight:600">📦 피킹 리스트</button>
+      <button onclick="pickGotoDate(document.getElementById('disp-date').value || new Date(Date.now()+86400000).toISOString().slice(0,10))" style="border-color:#c3e2d1;background:#e6f3ec;color:#2c7a54;font-weight:600">📦 피킹 리스트</button>
+      <div style="display:flex;flex-direction:column;gap:3px">
+        <label style="font-size:11px;color:#8a929c;font-weight:600">배차일 (배송일)</label>
+        <input id="disp-date" type="date" style="border:1.5px solid #f0f2f5;border-radius:10px;padding:9px 12px;font-size:13.5px;font-weight:600;font-family:inherit;outline:none">
+      </div>
       <button class="ghost" onclick="dispReset()">초기화</button>
       <button class="primary" onclick="dispAuto()">⚡ 자동 배차 초안</button>
       <button class="primary" onclick="dispConfirm()" style="background:var(--ok);border-color:var(--ok)">✓ 배차 확정</button>
@@ -1761,6 +2034,62 @@ select.form-control { cursor: pointer; }
 
 </div>
       </div><!-- /scr-picking -->
+
+      <!-- 배차 확정 목록 (X-2) -->
+      <div class="screen" id="scr-dispatchlist">
+        <div class="dl-wrap">
+          <div class="dl-bar">
+            <div>
+              <div class="dl-title">📅 배차 확정 목록</div>
+              <div class="dl-sub">날짜별 확정된 배차 산출물 · 클릭하면 상세 보기</div>
+            </div>
+            <div class="dl-stats">
+              <div class="dl-stat"><b id="dl-s-total">0</b><span>총 배차일</span></div>
+              <div class="dl-stat"><b id="dl-s-orders">0</b><span>총 배송 건수</span></div>
+              <div class="dl-stat"><b id="dl-s-refine">0</b><span>재확정 이력</span></div>
+              <div class="dl-stat"><b id="dl-s-running">0</b><span>운행 중 차량</span></div>
+            </div>
+          </div>
+          <div id="dl-list-body"></div>
+        </div>
+      </div><!-- /scr-dispatchlist -->
+
+      <!-- 기사용 화면 (Y-1) -->
+      <div class="screen" id="scr-driver">
+        <div class="drv-wrap">
+          <div class="drv-bar">
+            <div>
+              <div class="drv-title">🚙 기사용 화면</div>
+              <div class="drv-sub">기사님 접속 시 오늘 배차 확인 · 진행 상황 기록</div>
+            </div>
+            <div class="drv-driver-pick">
+              <label>기사 선택</label>
+              <select id="drv-driver-select" onchange="drvRender()">
+                <option value="">- 선택 -</option>
+              </select>
+            </div>
+          </div>
+          <div id="drv-body"></div>
+        </div>
+      </div><!-- /scr-driver -->
+
+      <!-- 피킹 확정 목록 (Z-2) -->
+      <div class="screen" id="scr-pickinglist">
+        <div class="pl-wrap">
+          <div class="pl-bar">
+            <div>
+              <div class="pl-title">📅 피킹 확정 목록</div>
+              <div class="pl-sub">날짜별 피킹 마감 이력 · 클릭하면 상세 보기</div>
+            </div>
+            <div class="pl-stats">
+              <div class="pl-stat"><b id="pl-s-total">0</b><span>총 마감일</span></div>
+              <div class="pl-stat"><b id="pl-s-items">0</b><span>총 처리 건수</span></div>
+              <div class="pl-stat"><b id="pl-s-reopen">0</b><span>재편집 이력</span></div>
+            </div>
+          </div>
+          <div id="pl-list-body"></div>
+        </div>
+      </div><!-- /scr-pickinglist -->
       <div class="screen" id="scr-dept"></div><!-- /scr-dept -->
       <div id="deptModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.45);z-index:10002;align-items:center;justify-content:center">
         <div style="width:420px;max-width:94%;background:#fff;border-radius:12px;overflow:hidden;box-shadow:0 12px 40px rgba(0,0,0,0.3)">
@@ -7961,6 +8290,9 @@ const screenSpecs = {
   shipsched: { id:'MES-SHIPSCHED', name:'납품 예정 현황', module:'물류 관리', desc:'출고 계획 기준 거래처별 납품 예정일·수량·진행 상태를 종합 조회하는 화면.', breadcrumb:'물류 관리 > 출고 계획 > 납품 예정 현황', items:[['화면명','납품 예정 현황'],['모듈','물류 관리'],['상태','흐름도 기준 신규 추가'],['접근권한','물류 / 영업 / 관리자']] },
   dispatch: { id:'MES-DISPATCH', name:'배차 보드', module:'물류 관리', desc:'출고 계획 기준 배차·차량 배정 현황을 관리하는 화면. (T-2에서 상세 이식 예정)', breadcrumb:'물류 관리 > 출고 계획 > 배차 보드', items:[['화면명','배차 보드'],['모듈','물류 관리'],['상태','신규 추가 (이식 대기)'],['접근권한','물류 / 관리자']] },
   picking: { id:'MES-PICKING', name:'피킹 리스트', module:'물류 관리', desc:'출고 지시 기준 피킹 대상 품목·수량을 QR과 함께 관리하는 화면. (T-3에서 상세 이식 예정)', breadcrumb:'물류 관리 > 출고 계획 > 피킹 리스트', items:[['화면명','피킹 리스트'],['모듈','물류 관리'],['상태','신규 추가 (이식 대기)'],['접근권한','물류 / 관리자']] },
+  dispatchlist: { id:'MES-DISPATCHLIST', name:'배차 확정 목록', module:'물류 관리', desc:'날짜별로 확정된 배차 산출물을 조회하고 상세(배송지시서·택배 내역)를 다시 여는 화면.', breadcrumb:'물류 관리 > 출고 관리 > 배차 확정 목록', items:[['화면명','배차 확정 목록'],['모듈','물류 관리'],['상태','신규 추가 (X-2)'],['접근권한','물류 / 관리자']] },
+  driver: { id:'MES-DRIVER', name:'기사용 화면', module:'물류 관리', desc:'기사님이 접속해 당일 배정 배차를 확인하고 출발·도착·복귀 상태를 기록하는 화면.', breadcrumb:'물류 관리 > 출고 관리 > 기사용 화면', items:[['화면명','기사용 화면'],['모듈','물류 관리'],['상태','신규 추가 (Y-1)'],['접근권한','기사 / 물류 / 관리자']] },
+  pickinglist: { id:'MES-PICKINGLIST', name:'피킹 확정 목록', module:'물류 관리', desc:'날짜별 피킹 마감 이력을 조회하고 상세(항목·이력)를 확인하는 화면.', breadcrumb:'물류 관리 > 출고 관리 > 피킹 확정 목록', items:[['화면명','피킹 확정 목록'],['모듈','물류 관리'],['상태','신규 추가 (Z-2)'],['접근권한','물류 / 관리자']] },
   fgstockreg: { id:'MES-FGSTOCKREG', name:'제품 재고 등록', module:'물류 관리', desc:'완제품(제품) 재고를 창고·LOT 단위로 신규 등록하는 화면.', breadcrumb:'물류 관리 > 제품 재고 > 제품 재고 등록', items:[['화면명','제품 재고 등록'],['모듈','물류 관리'],['상태','흐름도 기준 신규 추가'],['접근권한','물류 / 관리자']] },
   fgstocklist: { id:'MES-FGSTOCKLIST', name:'제품 재고 목록', module:'물류 관리', desc:'완제품 재고를 품목·창고·LOT별로 조회하는 목록 화면.', breadcrumb:'물류 관리 > 제품 재고 > 제품 재고 목록', items:[['화면명','제품 재고 목록'],['모듈','물류 관리'],['상태','흐름도 기준 신규 추가'],['접근권한','물류 / 관리자']] },
   fgstockstatus: { id:'MES-FGSTOCKSTATUS', name:'제품 재고 현황', module:'물류 관리', desc:'완제품 안전재고 대비 현재고·부족·과잉 상태를 종합 조회하는 화면.', breadcrumb:'물류 관리 > 제품 재고 > 제품 재고 현황', items:[['화면명','제품 재고 현황'],['모듈','물류 관리'],['상태','흐름도 기준 신규 추가'],['접근권한','물류 / 관리자']] },
@@ -11803,6 +12135,7 @@ console.log('[Width Stock Patch] 로드 완료 — MAT_STOCK:',
       <div class="out-head no-print">
         <div class="oh-t">배차 확정 산출물 <span id="disp-outMeta"></span></div>
         <div>
+          <span id="disp-edit-btnhost" style="margin-right:6px"></span>
           <button onclick="dispPrintOut()">인쇄 / PDF 저장</button>
           <button class="ghost" onclick="dispCloseOut()">닫기</button>
         </div>
@@ -12315,11 +12648,21 @@ function dispReset(){ DISP_ORDERS.forEach(o=> dispState[o.id]='pool'); dispRende
 
 /* ---------- 배차 확정 → 산출물 ---------- */
 let DISP_CONFIRMED = null;
+// 날짜별 확정 산출물 목록 (X-1 신설)
+if(!window.DISP_CONFIRMED_LIST) window.DISP_CONFIRMED_LIST = [];
+//  각 항목: { date, savedAt, trucks, parcel, charter, direct, logs:[] }
 function dispConfirm(){
   const pool = DISP_ORDERS.filter(o=>dispState[o.id]==='pool');
   if(pool.length && !confirm(`미배차 ${pool.length}건이 남아 있습니다. 그대로 확정할까요?`)) return;
+  const dateEl = document.getElementById('disp-date');
+  const dispatchDate = (dateEl && dateEl.value) || new Date().toISOString().slice(0,10);
+  const nowStr = new Date().toLocaleString('ko-KR');
+  const existing = DISP_CONFIRMED_LIST.find(x => x.date === dispatchDate);
+  const isRefine = !!existing;   // 같은 날짜 재확정 여부
   DISP_CONFIRMED = {
-    at: new Date().toLocaleString('ko-KR'),
+    date: dispatchDate,           // 배송일
+    savedAt: nowStr,              // 저장(확정) 시각
+    at: nowStr,                   // 기존 호환 유지
     trucks: DISP_TRUCKS.map(t=>{
       const assigned = DISP_ORDERS.filter(o=>dispState[o.id]===t.id);
       const route = dispOptimizeRoute(t, assigned);
@@ -12333,13 +12676,28 @@ function dispConfirm(){
     charter: DISP_ORDERS.filter(o=>dispState[o.id]==='charter').map(o=>({...o})),
     direct:  DISP_ORDERS.filter(o=>dispState[o.id]==='direct').map(o=>({...o}))
   };
+  // X-1: 목록 저장 (같은 날짜면 덮어쓰기 + 로그, 새 날짜면 unshift)
+  if(existing){
+    const prevLogs = existing.logs || [];
+    prevLogs.push({
+      action: '재확정',
+      at: nowStr,
+      by: '예람',
+      detail: '전체 재확정 (기존 산출물 덮어쓰기)'
+    });
+    DISP_CONFIRMED.logs = prevLogs;
+    Object.assign(existing, DISP_CONFIRMED);
+  } else {
+    DISP_CONFIRMED.logs = [{ action:'최초 확정', at:nowStr, by:'예람', detail:'' }];
+    DISP_CONFIRMED_LIST.unshift(DISP_CONFIRMED);
+  }
   // U-4: 거래처별 히스토리 누적
   if(!window.DISP_HISTORY) window.DISP_HISTORY = {};
   DISP_CONFIRMED.trucks.forEach(t=>{
     t.stops.forEach(o=>{
       if(!DISP_HISTORY[o.cust]) DISP_HISTORY[o.cust] = [];
       DISP_HISTORY[o.cust].unshift({
-        date: DISP_CONFIRMED.at,
+        date: DISP_CONFIRMED.date,
         truck: t.name+' '+t.driver,
         item: o.item,
         boxes: o.boxes,
@@ -12354,7 +12712,11 @@ function dispConfirm(){
   if(reverseCount && window.mesAddNotif){
     mesAddNotif({type:'info',icon:'📦',title:'반품 회수 예정',desc:reverseCount+'건 반품 회수 예정 · 복귀 시 창고 재입고 처리 필요'});
   }
+  if(isRefine && window.mesToast){
+    mesToast({icon:'🔄',title:'재확정 완료',desc:dispatchDate+' 배차가 덮어쓰기됐고 로그에 기록됐습니다.',actions:'<button class="tp-btn ghost" data-tp="dismiss">닫기</button>'});
+  }
   dispOutTab = 'wi'; dispRenderConfirmed(); d$('disp-outModal').classList.add('show');
+  if(typeof dispListRender === 'function') dispListRender();
 }
 
 /* ===== U-2: 긴급 오더 삽입 (확정 후 끼워넣기) ===== */
@@ -12403,34 +12765,162 @@ function dispSwitchOut(tab){
 }
 function dispRenderConfirmed(){
   const c = DISP_CONFIRMED; if(!c) return;
-  d$('disp-outMeta').textContent = '확정 ' + c.at;
+  const logCount = (c.logs||[]).length;
+  d$('disp-outMeta').innerHTML =
+    '<span style="color:#FF6B35;font-weight:700">'+ (c.date||'') +' 배차</span>' +
+    ' <span style="color:#8a929c">· 확정 '+ (c.savedAt||c.at) +
+    (logCount>1 ? ' · 로그 '+logCount+'건' : '') + '</span>';
+  // X-4: 전체 진행률 배지
+  const allStops = (c.trucks||[]).flatMap(t=>t.stops);
+  const loadedN = allStops.filter(s=>s.loaded).length;
+  const proofN  = allStops.filter(s=>s.proof).length;
+  const totalN  = allStops.length;
+  if(totalN){
+    d$('disp-outMeta').innerHTML +=
+      ` <span style="margin-left:10px;font-size:12px;padding:3px 10px;border-radius:999px;background:${loadedN===totalN?'#e6f3ec':'#f4f6f9'};color:${loadedN===totalN?'#2c7a54':'#5c6672'};font-weight:600">적재 ${loadedN}/${totalN}</span>` +
+      ` <span style="font-size:12px;padding:3px 10px;border-radius:999px;background:${proofN===totalN?'#e6f3ec':'#f4f6f9'};color:${proofN===totalN?'#2c7a54':'#5c6672'};font-weight:600">납품 ${proofN}/${totalN}</span>`;
+  }
+  // X-3: 편집 모드 버튼
+  const editBtnHost = document.getElementById('disp-edit-btnhost');
+  if(editBtnHost){
+    if(DISP_EDIT_MODE){
+      editBtnHost.innerHTML =
+        `<span style="margin-right:8px;font-size:12px;color:#5c6672;font-weight:600">배차일</span>` +
+        `<input type="date" value="${c.date}" onchange="dispEditChangeDate(this.value)" style="border:1.5px solid #FF6B35;border-radius:8px;padding:6px 10px;font-size:12.5px;font-weight:600;font-family:inherit;outline:none;margin-right:10px">` +
+        `<button onclick="dispEditOpenAddPanel()" style="background:#f4f6f9;color:#1b2430;border:none;border-radius:10px;padding:9px 14px;font-size:13px;font-weight:600;cursor:pointer;margin-right:6px">＋ 오더 추가</button>` +
+        `<button onclick="dispEditSave()" style="background:#2c7a54;color:#fff;border:none;border-radius:10px;padding:9px 14px;font-size:13px;font-weight:600;cursor:pointer;margin-right:6px">✓ 수정 저장</button>` +
+        `<button onclick="dispEditCancel()" style="background:#f4f6f9;color:#5c6672;border:none;border-radius:10px;padding:9px 14px;font-size:13px;font-weight:600;cursor:pointer">취소</button>`;
+    } else {
+      editBtnHost.innerHTML = `<button onclick="dispEditStart()" style="background:#fff4ea;color:#c04a12;border:1.5px solid #FF6B35;border-radius:10px;padding:9px 14px;font-size:13px;font-weight:600;cursor:pointer">✎ 수정 모드</button>`;
+    }
+  }
   if(dispOutTab==='wi'){
     const docs = c.trucks.filter(t=>t.stops.length).map(t=>{
-      const rows = t.stops.map((o,i)=>
-        `<tr>
+      const rows = t.stops.map((o,i)=>{
+        if(DISP_EDIT_MODE){
+          const truckOpts = DISP_CONFIRMED.trucks.map(tt=>`<option value="${tt.name}"${tt.name===t.name?' selected':''}>${tt.name} ${tt.driver}</option>`).join('');
+          return `<tr>
+            <td class="wi-seq" style="white-space:nowrap">
+              <button onclick="dispEditMove('${t.name}',${i},-1)" ${i===0?'disabled':''} style="border:none;background:#f4f6f9;border-radius:6px;width:22px;height:22px;font-size:12px;cursor:pointer;margin-right:2px">↑</button>
+              <button onclick="dispEditMove('${t.name}',${i},1)" ${i===t.stops.length-1?'disabled':''} style="border:none;background:#f4f6f9;border-radius:6px;width:22px;height:22px;font-size:12px;cursor:pointer">↓</button>
+            </td>
+            <td>
+              <div class="wi-cust">${o.cust}${o.type==='pickup'?'<span class="wi-pickup">픽업</span>':''}${o.type==='reverse'?'<span class="wi-reverse">반품</span>':''}</div>
+              <div class="wi-to">▸ ${o.deliverTo||''} · ${o.address||''}</div>
+              ${o.note?`<div class="wi-note">⚠ ${o.note}</div>`:''}
+              <input type="text" placeholder="담당자 메모 (수정 저장 시 로그에 기록)" value="${o.editNote||''}" onblur="dispEditMemo('${t.name}',${i},this.value)" style="width:100%;margin-top:6px;padding:6px 10px;border:1.5px solid #f0f2f5;border-radius:8px;font-size:12px;font-family:inherit;outline:none">
+            </td>
+            <td class="wi-item">${o.item}<br><span style="color:var(--muted);font-size:11.5px">${o.qty.toLocaleString()}${o.unit} · ${o.machine||''}</span></td>
+            <td class="wi-box"><b class="tnum">${o.boxes||'-'}</b><span>박스</span></td>
+            <td class="wi-kg tnum">${o.weightKg.toLocaleString()}kg</td>
+            <td style="white-space:nowrap;text-align:center">
+              <select onchange="dispEditChangeTruck('${t.name}',${i},this.value)" style="border:1.5px solid #f0f2f5;border-radius:8px;padding:5px 6px;font-size:11.5px;font-family:inherit;outline:none;background:#fff">${truckOpts}</select>
+              <button onclick="dispEditDelete('${t.name}',${i})" style="border:none;background:#fdf3f1;color:#b23b30;border-radius:6px;padding:5px 10px;font-size:11.5px;font-weight:600;cursor:pointer;margin-left:4px">삭제</button>
+            </td>
+          </tr>`;
+        }
+        return `<tr>
           <td class="wi-seq">${o.isInserted?'<span style="color:#b23b30">🔥</span>':(i+1)}</td>
           <td>
-            <div class="wi-cust">${o.cust}${o.type==='pickup'?'<span class="wi-pickup">픽업</span>':''}${o.type==='reverse'?'<span class="wi-reverse">반품</span>':''}${o.location&&o.location!=='창고'&&o.location!=='-'?`<span class="wi-loc" style="background:${dispLocStyle(o.location)}">${o.location}</span>`:''}</div>
+            <div class="wi-cust">${o.cust}${o.type==='pickup'?'<span class="wi-pickup">픽업</span>':''}${o.type==='reverse'?'<span class="wi-reverse">반품</span>':''}${o.location&&o.location!=='창고'&&o.location!=='-'?`<span class="wi-loc" style="background:${dispLocStyle(o.location)}">${o.location}</span>`:''}${(function(){
+              const truckDef = DISP_TRUCKS.find(x=>x.name===t.name);
+              const arr = truckDef ? ((DRV_STATUS[truckDef.id]||{}).arrivals||{})[o.id] : null;
+              return arr ? `<span class="wi-arrived">✓ ${new Date(arr).toLocaleTimeString('ko-KR',{hour:'2-digit',minute:'2-digit'})} 도착</span>` : '';
+            })()}</div>
             <div class="wi-to">▸ ${o.deliverTo||''} · ${o.address||''}</div>
             ${o.note?`<div class="wi-note">⚠ ${o.note}</div>`:''}
+            ${o.editNote?`<div style="font-size:11.5px;color:#5c6672;font-weight:500;margin-top:3px;font-style:italic">💬 ${o.editNote}</div>`:''}
           </td>
           <td class="wi-item">${o.item}<br><span style="color:var(--muted);font-size:11.5px">${o.qty.toLocaleString()}${o.unit} · ${o.machine||''}</span></td>
           <td class="wi-box"><b class="tnum">${o.boxes||'-'}</b><span>박스</span></td>
           <td class="wi-kg tnum">${o.weightKg.toLocaleString()}kg</td>
-          <td class="wi-chk"><button onclick="dispProofOpen('${o.id}','${t.name}')" style="border:none;background:transparent;cursor:pointer;font-size:17px;color:${o.proof?'var(--ok)':'var(--faint)'}" title="${o.proof?'완료됨':'완료 기록'}">${o.proof?'✅':'☐'}</button></td>
-        </tr>`).join('');
+          <td class="wi-chk">
+            <button onclick="dispLoadedToggle('${o.id}')" style="border:none;background:transparent;cursor:pointer;font-size:19px;color:${o.loaded?'#2c7a54':'#cfd6df'}" title="적재 ${o.loaded?'완료':'대기'}">${o.loaded?'✅':'☐'}</button>
+          </td>
+          <td class="wi-chk">
+            <button onclick="dispProofOpen('${o.id}','${t.name}')" style="border:none;background:transparent;cursor:pointer;font-size:19px;color:${o.proof?'#2c7a54':'#cfd6df'}" title="납품 ${o.proof?'완료':'대기'}">${o.proof?'✅':'☐'}</button>
+          </td>
+        </tr>`;
+      }).join('');
+      const prog = drvGetTruckProgress(c, t.name);
+      const progBadge = prog ? `<div class="wi-progress-badge" style="background:${prog.color}">${prog.phaseText}</div>` : '';
       return `<div class="wi">
         <div class="wi-top">
-          <div><span class="wi-truck">${t.name}</span><span class="wi-driver">${t.driver} 기사</span></div>
-          <div class="wi-sum">총 ${t.boxes}박스 · ${t.load.toLocaleString()}kg<br>${t.stops.length}개소 · ${t.distanceKm}km · ${t.timeText} · 퇴근 ${t.homeZone}</div>
+          <div>
+            <div><span class="wi-truck">${t.name}</span><span class="wi-driver">${t.driver} 기사</span>${progBadge}</div>
+            ${prog && prog.nextStop && prog.phase==='running' ? `<div class="wi-nextstop">→ 다음: ${prog.nextStop.cust}</div>` : ''}
+          </div>
+          <div class="wi-sum">
+            총 ${t.boxes}박스 · ${t.load.toLocaleString()}kg · ${t.stops.length}개소<br>
+            ${t.distanceKm}km · ${t.timeText} · 퇴근 ${t.homeZone}<br>
+            <span style="font-size:11.5px;opacity:.85">
+              적재 ${t.stops.filter(o=>o.loaded).length}/${t.stops.length} ·
+              납품 ${t.stops.filter(o=>o.proof).length}/${t.stops.length}
+            </span>
+          </div>
         </div>
         <table class="wi-tbl">
-          <thead><tr><th style="width:34px;text-align:center">순번</th><th>거래처 / 납품처 / 특이지시</th><th>품목</th><th style="text-align:center;width:60px">박스</th><th style="text-align:right;width:74px">중량</th><th style="width:34px;text-align:center">적재</th></tr></thead>
+          <thead><tr>
+            <th style="width:${DISP_EDIT_MODE?70:34}px;text-align:center">${DISP_EDIT_MODE?'순서':'순번'}</th>
+            <th>거래처 / 납품처 / 특이지시${DISP_EDIT_MODE?' / 메모':''}</th>
+            <th>품목</th>
+            <th style="text-align:center;width:64px">박스</th>
+            <th style="text-align:right;width:78px">중량</th>
+            ${DISP_EDIT_MODE
+              ? '<th style="width:150px;text-align:center">차량/삭제</th>'
+              : '<th style="width:44px;text-align:center;font-size:11px">적재</th><th style="width:44px;text-align:center;font-size:11px">납품</th>'}
+          </tr></thead>
           <tbody>${rows}</tbody>
         </table>
       </div>`;
     }).join('');
-    d$('disp-outBody').innerHTML = docs || '<div class="out-empty">자차 배송 없음</div>';
+    // X-5: 편집 모드 · 오더 추가 패널
+    let addPanel = '';
+    if(DISP_EDIT_MODE && DISP_ADD_PANEL_OPEN){
+      const pool = DISP_ORDERS.filter(o=>{
+        // 아직 이 확정본에 안 담긴 것만
+        const inTruck = c.trucks.some(tt => tt.stops.some(s=>s.id===o.id));
+        const inSpecial = (c.parcel||[]).some(s=>s.id===o.id)
+          || (c.charter||[]).some(s=>s.id===o.id)
+          || (c.direct||[]).some(s=>s.id===o.id);
+        return !inTruck && !inSpecial;
+      });
+      const truckBtns = orderId => c.trucks.map(tt =>
+        `<button onclick="dispEditAddOrder('${orderId}','${tt.name}')" style="border:none;background:#f4f6f9;border-radius:8px;padding:6px 10px;font-size:11.5px;font-weight:600;cursor:pointer;margin-right:4px">${tt.name}</button>`
+      ).join('');
+      addPanel = `
+        <div style="background:#fffbf7;border:1.5px dashed #FF6B35;border-radius:14px;padding:16px 20px;margin-bottom:18px">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
+            <div style="font-size:14px;font-weight:700;color:#c04a12">＋ 오더 추가</div>
+            <span onclick="dispEditCloseAddPanel()" style="cursor:pointer;color:#8a929c;font-size:14px">✕</span>
+          </div>
+          ${pool.length? `<div style="display:flex;flex-direction:column;gap:8px">${
+            pool.map(o=>`
+              <div style="display:grid;grid-template-columns:1fr auto;gap:10px;align-items:center;padding:10px 12px;background:#fff;border-radius:10px;border:1px solid #f0f2f5">
+                <div>
+                  <div style="font-size:13.5px;font-weight:700">${o.cust}${o.urgent?' <span style="color:#b23b30;font-size:11px">긴급</span>':''}</div>
+                  <div style="font-size:11.5px;color:#5c6672">${o.item} · ${o.boxes||'-'}박스 · ${(o.weightKg||0).toLocaleString()}kg · ${o.zone||'-'}</div>
+                </div>
+                <div style="white-space:nowrap">${truckBtns(o.id)}</div>
+              </div>`).join('')
+          }</div>` : '<div style="font-size:12.5px;color:#8a929c;text-align:center;padding:10px">미배차 풀에 추가 가능한 오더가 없습니다</div>'}
+        </div>`;
+    }
+    const docsHtml = docs || '<div class="out-empty">자차 배송 없음</div>';
+    const logsHtml = (c.logs && c.logs.length>1) ? `
+      <div style="margin-top:22px;padding:16px 20px;background:#fafbfc;border-radius:14px">
+        <div style="font-size:11.5px;font-weight:700;color:#8a929c;letter-spacing:.06em;text-transform:uppercase;margin-bottom:10px">수정 이력</div>
+        ${c.logs.slice().reverse().map(l=>`
+          <div style="display:flex;gap:12px;padding:8px 0;border-bottom:1px solid #f0f2f5;font-size:12.5px">
+            <div style="min-width:70px;font-weight:700;color:${l.action==='최초 확정'?'#2c7a54':(l.action==='재확정'?'#FF6B35':'#5c6672')}">${l.action}</div>
+            <div style="flex:1">${l.detail||'-'}</div>
+            <div style="color:#8a929c;font-size:11.5px">${l.at}</div>
+          </div>`).join('')}
+      </div>` : '';
+    const mapHtml = DISP_EDIT_MODE
+      ? ''
+      : `<div style="background:#fff;border:1px solid #f0f2f5;border-radius:16px;padding:14px;margin-bottom:16px">${drvRenderMap(c)}</div>`;
+    d$('disp-outBody').innerHTML = addPanel + mapHtml + docsHtml + logsHtml;
   } else {
     let html = '';
     if(c.parcel.length){
@@ -12453,6 +12943,711 @@ function dispRenderConfirmed(){
     d$('disp-outBody').innerHTML = html;
   }
 }
+/* ===== X-2: 배차 확정 목록 ===== */
+window.dispListRender = function(){
+  const body = document.getElementById('dl-list-body');
+  if(!body) return;
+  const list = window.DISP_CONFIRMED_LIST || [];
+
+  // 통계 (오늘/내일은 로컬 날짜 기준 — toISOString은 UTC라 오전에 어긋남)
+  const localYmd = d => d.getFullYear()+'-'+('0'+(d.getMonth()+1)).slice(-2)+'-'+('0'+d.getDate()).slice(-2);
+  const todayStr = localYmd(new Date());
+  const tomorrowStr = (function(){ const d=new Date();d.setDate(d.getDate()+1);return localYmd(d); })();
+  const totalOrders = list.reduce((s,x)=>{
+    return s + (x.trucks||[]).reduce((a,t)=>a+t.stops.length,0)
+             + (x.parcel||[]).length + (x.charter||[]).length + (x.direct||[]).length;
+  }, 0);
+  const totalRefine = list.reduce((s,x)=>s + Math.max(0, (x.logs||[]).length-1), 0);
+  const el = document.getElementById('dl-s-total');   if(el) el.textContent = list.length;
+  const el2 = document.getElementById('dl-s-orders'); if(el2) el2.textContent = totalOrders;
+  const el3 = document.getElementById('dl-s-refine'); if(el3) el3.textContent = totalRefine;
+  // Y-2: 운행 중 차량 (오늘 배차 중 phase가 running/last-mile)
+  const todayList = list.filter(x=>x.date===todayStr);
+  let runningCount = 0;
+  todayList.forEach(cc=>{
+    (cc.trucks||[]).forEach(t=>{
+      const p = drvGetTruckProgress(cc, t.name);
+      if(p && (p.phase==='running' || p.phase==='last-mile')) runningCount++;
+    });
+  });
+  const el4 = document.getElementById('dl-s-running'); if(el4) el4.textContent = runningCount;
+
+  if(!list.length){
+    body.innerHTML = `<div class="dl-empty">
+      <div class="em">📅</div>
+      <div class="t">확정된 배차가 아직 없습니다</div>
+      <div class="s">배차 보드에서 배차를 확정하면 여기에 날짜별로 쌓입니다.</div>
+    </div>`;
+    return;
+  }
+
+  const dow = ['일','월','화','수','목','금','토'];
+  body.innerHTML = list.map(c=>{
+    const dt = new Date(c.date);
+    const md = ('0'+(dt.getMonth()+1)).slice(-2)+'.'+('0'+dt.getDate()).slice(-2);
+    const y = dt.getFullYear();
+    const dowText = dow[dt.getDay()]+'요일';
+    const isToday = c.date === todayStr;
+    const isTomorrow = c.date === tomorrowStr;
+    const isTodayLike = isToday || isTomorrow;
+
+    const totalStops = (c.trucks||[]).reduce((a,t)=>a+t.stops.length,0);
+    const totalKg = (c.trucks||[]).reduce((a,t)=>a+(t.load||0),0);
+    const totalBoxes = (c.trucks||[]).reduce((a,t)=>a+(t.boxes||0),0);
+    const loadedTotal = (c.trucks||[]).reduce((a,t)=>a + t.stops.filter(s=>s.loaded).length, 0);
+    const proofTotal  = (c.trucks||[]).reduce((a,t)=>a + t.stops.filter(s=>s.proof).length, 0);
+    const parcelN = (c.parcel||[]).length;
+    const charterN = (c.charter||[]).length;
+    const directN = (c.direct||[]).length;
+    const refineCount = Math.max(0, (c.logs||[]).length-1);
+
+    const truckChips = (c.trucks||[]).map(t=>{
+      const empty = !t.stops.length;
+      const prog = drvGetTruckProgress(c, t.name);
+      const progStr = prog && prog.phase==='running' ? ` · <b style="color:${prog.color}">${prog.arrivedCount}/${prog.total}</b>`
+        : prog && prog.phase==='returned' ? ` · <b style="color:#2c7a54">완료</b>`
+        : prog && prog.phase==='last-mile' ? ` · <b style="color:#c04a12">복귀중</b>`
+        : '';
+      return `<span class="dl-truck-chip${empty?' empty':''}">${t.name} · ${t.stops.length}건 · ${(t.load||0).toLocaleString()}kg${progStr}</span>`;
+    }).join('');
+
+    const tags = [];
+    if(isToday) tags.push('<span class="dl-tag today">오늘</span>');
+    else if(isTomorrow) tags.push('<span class="dl-tag today">내일</span>');
+    if(refineCount) tags.push(`<span class="dl-tag refine">재확정 ${refineCount}회</span>`);
+
+    return `<div class="dl-card${isTodayLike?' today':''}" onclick="dispListOpen('${c.date}')">
+      <div class="dl-date">
+        <div class="dl-md">${md}</div>
+        <div class="dl-y">${y}</div>
+        <div class="dl-dow">${dowText}</div>
+      </div>
+      <div class="dl-info">
+        <div class="dl-info-top">${tags.join('')}</div>
+        <div class="dl-summary">
+          <span>자차 <b>${totalStops}건</b></span>
+          <span>총 <b>${totalBoxes}박스</b></span>
+          <span><b class="tnum">${totalKg.toLocaleString()}kg</b></span>
+          ${parcelN?`<span>택배 <b>${parcelN}</b></span>`:''}
+          ${charterN?`<span>용차 <b>${charterN}</b></span>`:''}
+          ${directN?`<span>직접 <b>${directN}</b></span>`:''}
+          ${totalStops?`<span>적재 <b>${loadedTotal}/${totalStops}</b></span>`:''}
+          ${totalStops?`<span>납품 <b>${proofTotal}/${totalStops}</b></span>`:''}
+        </div>
+        <div class="dl-trucks">${truckChips}</div>
+        <div class="dl-savedat">확정 ${c.savedAt}</div>
+      </div>
+      <div style="display:flex;align-items:center;gap:8px">
+        <button onclick="event.stopPropagation();pickGotoDate('${c.date}')" style="background:#fff4ea;color:#c04a12;border:1.5px solid #FF6B35;border-radius:10px;padding:8px 14px;font-size:12.5px;font-weight:700;cursor:pointer;white-space:nowrap">📋 피킹 리스트</button>
+        <div class="dl-arrow">›</div>
+      </div>
+    </div>`;
+  }).join('');
+};
+
+// 목록 카드 클릭 → 그 날짜의 산출물 다시 열기
+window.dispListOpen = function(date){
+  if(DISP_EDIT_MODE){
+    if(!confirm('편집 중인 내용이 있습니다. 취소하고 이동할까요?')) return;
+    dispEditCancel();
+  }
+  const c = (window.DISP_CONFIRMED_LIST||[]).find(x=>x.date===date);
+  if(!c) return;
+  DISP_CONFIRMED = c;         // 현재 표시 대상으로 지정
+  dispOutTab = 'wi';
+  document.getElementById('disp-tab-wi').classList.add('on');
+  document.getElementById('disp-tab-pc').classList.remove('on');
+  dispRenderConfirmed();
+  document.getElementById('disp-outModal').classList.add('show');
+};
+
+/* ===== X-3: 확정 배차 인라인 편집 ===== */
+let DISP_EDIT_MODE = false;
+let DISP_EDIT_SNAPSHOT = null;   // 편집 시작 시점의 원본 (변경 감지용)
+let DISP_ADD_PANEL_OPEN = false; // X-5: 오더 추가 패널 열림 상태
+window.dispEditOpenAddPanel  = function(){ DISP_ADD_PANEL_OPEN = true;  dispRenderConfirmed(); };
+window.dispEditCloseAddPanel = function(){ DISP_ADD_PANEL_OPEN = false; dispRenderConfirmed(); };
+
+window.dispEditStart = function(){
+  if(!DISP_CONFIRMED) return;
+  DISP_EDIT_MODE = true;
+  DISP_EDIT_SNAPSHOT = JSON.parse(JSON.stringify(DISP_CONFIRMED));  // 깊은 복사
+  DISP_ADD_PANEL_OPEN = false;
+  dispRenderConfirmed();
+};
+
+window.dispEditCancel = function(){
+  if(!DISP_EDIT_SNAPSHOT) return;
+  // 원본으로 되돌리기
+  Object.assign(DISP_CONFIRMED, DISP_EDIT_SNAPSHOT);
+  // 목록 배열의 항목도 되돌림 (같은 참조여야 함)
+  const existing = (DISP_CONFIRMED_LIST||[]).find(x=>x.date===DISP_CONFIRMED.date);
+  if(existing) Object.assign(existing, DISP_EDIT_SNAPSHOT);
+  DISP_EDIT_MODE = false;
+  DISP_EDIT_SNAPSHOT = null;
+  DISP_ADD_PANEL_OPEN = false;
+  dispRenderConfirmed();
+};
+
+window.dispEditSave = function(){
+  if(!DISP_CONFIRMED || !DISP_EDIT_SNAPSHOT){ DISP_EDIT_MODE = false; dispRenderConfirmed(); return; }
+  const diffs = dispDiffCompute(DISP_EDIT_SNAPSHOT, DISP_CONFIRMED);
+  if(!diffs.length){
+    DISP_EDIT_MODE = false; DISP_EDIT_SNAPSHOT = null;
+    dispRenderConfirmed();
+    if(window.mesToast) mesToast({icon:'ℹ️',title:'변경 사항 없음',desc:'수정된 내용이 없어 로그를 남기지 않았습니다.',actions:'<button class="tp-btn ghost" data-tp="dismiss">닫기</button>'});
+    return;
+  }
+  const nowStr = new Date().toLocaleString('ko-KR');
+  DISP_CONFIRMED.logs = DISP_CONFIRMED.logs || [];
+  DISP_CONFIRMED.logs.push({
+    action:'수정',
+    at:nowStr,
+    by:'예람',
+    detail: diffs.join(' · ')
+  });
+  DISP_CONFIRMED.savedAt = nowStr;  // 마지막 저장 시각 갱신
+  // 목록 배열에도 반영
+  const existing = (DISP_CONFIRMED_LIST||[]).find(x=>x.date===DISP_CONFIRMED.date);
+  if(existing) Object.assign(existing, DISP_CONFIRMED);
+
+  DISP_EDIT_MODE = false;
+  DISP_EDIT_SNAPSHOT = null;
+  DISP_ADD_PANEL_OPEN = false;
+  dispRenderConfirmed();
+  if(typeof dispListRender==='function') dispListRender();
+  if(window.mesToast) mesToast({icon:'✅',title:'수정 저장 완료',desc: diffs.length+'건 변경 · 로그에 기록됨',actions:'<button class="tp-btn ghost" data-tp="dismiss">닫기</button>'});
+};
+
+function dispDiffCompute(before, after){
+  const diffs = [];
+  if(before.date !== after.date) diffs.push(`배차일 ${before.date}→${after.date}`);
+  // 차량별 stop 비교
+  const beforeStopsByTruck = {};
+  const afterStopsByTruck = {};
+  (before.trucks||[]).forEach(t=>{ beforeStopsByTruck[t.name] = t.stops.map(s=>s.id); });
+  (after.trucks||[]).forEach(t=>{  afterStopsByTruck[t.name]  = t.stops.map(s=>s.id); });
+
+  // 어느 트럭에 무엇이 있었는지 맵 (이동 감지용)
+  const beforeTruckOf = {}; // orderId -> truckName
+  Object.keys(beforeStopsByTruck).forEach(tn => beforeStopsByTruck[tn].forEach(id => beforeTruckOf[id]=tn));
+  const afterTruckOf = {};
+  Object.keys(afterStopsByTruck).forEach(tn => afterStopsByTruck[tn].forEach(id => afterTruckOf[id]=tn));
+
+  const allIds = new Set([...Object.keys(beforeTruckOf), ...Object.keys(afterTruckOf)]);
+  const custOf = id => {
+    for(const t of (before.trucks||[])) { const s = t.stops.find(x=>x.id===id); if(s) return s.cust; }
+    for(const t of (after.trucks||[]))  { const s = t.stops.find(x=>x.id===id); if(s) return s.cust; }
+    return id;
+  };
+
+  // 삭제 / 이동 감지
+  allIds.forEach(id=>{
+    const bt = beforeTruckOf[id];
+    const at = afterTruckOf[id];
+    if(bt && !at) diffs.push(`${custOf(id)} 삭제`);
+    else if(bt && at && bt!==at) diffs.push(`${custOf(id)} ${bt}→${at}`);
+    else if(!bt && at) diffs.push(`${custOf(id)} 추가→${at}`);   // 새로 추가된 건
+  });
+
+  // 같은 트럭 내 순서 변경 감지
+  Object.keys(beforeStopsByTruck).forEach(tn=>{
+    const b = beforeStopsByTruck[tn];
+    const a = afterStopsByTruck[tn] || [];
+    const kept = b.filter(id=>a.includes(id));
+    const orderedInA = a.filter(id=>kept.includes(id));
+    if(kept.length>1 && kept.join(',') !== orderedInA.join(',')){
+      diffs.push(`${tn} 순서 변경`);
+    }
+  });
+
+  // 메모 변경 감지
+  (before.trucks||[]).forEach(t=>{
+    t.stops.forEach(bs=>{
+      // 같은 id를 after에서 찾기 (트럭 이동해도 유지)
+      let as = null;
+      (after.trucks||[]).forEach(t2=>{ const found = t2.stops.find(x=>x.id===bs.id); if(found) as = found; });
+      if(as && (bs.editNote||'') !== (as.editNote||'')){
+        diffs.push(`${bs.cust} 메모 수정`);
+      }
+    });
+  });
+
+  return diffs;
+}
+
+window.dispEditMove = function(truckName, index, dir){
+  if(!DISP_EDIT_MODE || !DISP_CONFIRMED) return;
+  const t = DISP_CONFIRMED.trucks.find(x=>x.name===truckName);
+  if(!t) return;
+  const ni = index + dir;
+  if(ni<0 || ni>=t.stops.length) return;
+  const tmp = t.stops[index]; t.stops[index] = t.stops[ni]; t.stops[ni] = tmp;
+  dispRenderConfirmed();
+};
+
+window.dispEditChangeTruck = function(fromTruck, index, toTruck){
+  if(!DISP_EDIT_MODE || !DISP_CONFIRMED) return;
+  if(fromTruck===toTruck) return;
+  const src = DISP_CONFIRMED.trucks.find(x=>x.name===fromTruck);
+  const dst = DISP_CONFIRMED.trucks.find(x=>x.name===toTruck);
+  if(!src || !dst) return;
+  const stop = src.stops.splice(index, 1)[0];
+  if(!stop) return;
+  dst.stops.push(stop);
+  dispRecalcTruck(src);
+  dispRecalcTruckWithRoute(dst);
+  dispRenderConfirmed();
+};
+
+// 적재량/박스수만 다시 계산 (순서는 그대로)
+function dispRecalcTruck(t){
+  t.load = t.stops.reduce((s,o)=>s+(o.weightKg||0),0);
+  t.boxes = t.stops.reduce((s,o)=>s+(o.boxes||0),0);
+}
+
+// 순서까지 최근접 이웃으로 재최적화 + 적재량 재계산
+function dispRecalcTruckWithRoute(t){
+  const truckDef = DISP_TRUCKS.find(x=>x.name===t.name);
+  if(!truckDef){ dispRecalcTruck(t); return; }
+  const route = dispOptimizeRoute(truckDef, t.stops);
+  t.stops = route.stops;
+  t.distanceKm = route.distanceKm;
+  t.timeText = route.timeText;
+  t.load = t.stops.reduce((s,o)=>s+(o.weightKg||0),0);
+  t.boxes = t.stops.reduce((s,o)=>s+(o.boxes||0),0);
+}
+
+/* ===== X-5: 배차일 변경 (이동/병합) ===== */
+window.dispEditChangeDate = function(newDate){
+  if(!DISP_EDIT_MODE || !DISP_CONFIRMED) return;
+  if(!newDate || newDate===DISP_CONFIRMED.date) return;
+
+  const existing = (DISP_CONFIRMED_LIST||[]).find(x => x.date===newDate && x !== DISP_CONFIRMED);
+  if(existing){
+    if(!confirm(`${newDate}에 이미 확정된 배차가 있습니다. 병합할까요?\n(현재 편집 중인 건들이 그 날짜에 합쳐집니다)`)) return;
+
+    // 현재 CONFIRMED의 stops를 existing에 합치기
+    DISP_CONFIRMED.trucks.forEach((t, i)=>{
+      const targetTruck = existing.trucks[i];
+      if(!targetTruck) return;
+      targetTruck.stops = targetTruck.stops.concat(t.stops);
+      dispRecalcTruckWithRoute(targetTruck);
+    });
+    existing.parcel  = (existing.parcel||[]).concat(DISP_CONFIRMED.parcel||[]);
+    existing.charter = (existing.charter||[]).concat(DISP_CONFIRMED.charter||[]);
+    existing.direct  = (existing.direct||[]).concat(DISP_CONFIRMED.direct||[]);
+    existing.logs = existing.logs || [];
+    existing.logs.push({ action:'병합', at:new Date().toLocaleString('ko-KR'), by:'예람',
+      detail:`${DISP_CONFIRMED.date} → ${newDate} 병합` });
+
+    // 현재 항목을 목록에서 제거
+    const idx = DISP_CONFIRMED_LIST.findIndex(x=>x===DISP_CONFIRMED);
+    if(idx>=0) DISP_CONFIRMED_LIST.splice(idx,1);
+    DISP_CONFIRMED = existing;
+    DISP_EDIT_SNAPSHOT = JSON.parse(JSON.stringify(existing));  // 스냅샷 갱신(diff 기준 리셋)
+  } else {
+    // 단순 날짜 이동
+    DISP_CONFIRMED.date = newDate;
+  }
+  dispRenderConfirmed();
+  if(typeof dispListRender==='function') dispListRender();
+};
+
+/* ===== X-5: 미배차 풀에서 오더 추가 ===== */
+window.dispEditAddOrder = function(orderId, truckName){
+  if(!DISP_EDIT_MODE || !DISP_CONFIRMED) return;
+  const o = DISP_ORDERS.find(x=>x.id===orderId);
+  if(!o) return;
+  const t = DISP_CONFIRMED.trucks.find(x=>x.name===truckName);
+  if(!t) return;
+
+  // 이미 이 확정본에 있으면 중단
+  const already = DISP_CONFIRMED.trucks.some(tt => tt.stops.some(s=>s.id===orderId))
+    || (DISP_CONFIRMED.parcel||[]).some(s=>s.id===orderId)
+    || (DISP_CONFIRMED.charter||[]).some(s=>s.id===orderId)
+    || (DISP_CONFIRMED.direct||[]).some(s=>s.id===orderId);
+  if(already){ alert('이미 이 배차에 포함돼 있습니다.'); return; }
+
+  t.stops.push({...o, addedInEdit:true});
+  dispRecalcTruckWithRoute(t);
+  dispRenderConfirmed();
+};
+
+window.dispEditDelete = function(truckName, index){
+  if(!DISP_EDIT_MODE || !DISP_CONFIRMED) return;
+  const t = DISP_CONFIRMED.trucks.find(x=>x.name===truckName);
+  if(!t) return;
+  const stop = t.stops[index];
+  if(!stop) return;
+  if(!confirm(`${stop.cust}을(를) 이 배차에서 제외할까요?`)) return;
+  t.stops.splice(index, 1);
+  t.load = t.stops.reduce((s,o)=>s+(o.weightKg||0),0);
+  t.boxes = t.stops.reduce((s,o)=>s+(o.boxes||0),0);
+  dispRenderConfirmed();
+};
+
+window.dispEditMemo = function(truckName, index, value){
+  if(!DISP_EDIT_MODE || !DISP_CONFIRMED) return;
+  const t = DISP_CONFIRMED.trucks.find(x=>x.name===truckName);
+  if(!t) return;
+  const stop = t.stops[index];
+  if(!stop) return;
+  stop.editNote = value;
+  // 렌더 다시 안 함 — 텍스트 입력 중이라. blur 때 diff만 갱신됨.
+};
+
+// 화면 전환 감지 → 배차 확정 목록 진입 시 자동 렌더
+(function watchDispList(){
+  const el = document.getElementById('scr-dispatchlist');
+  if(!el) return;
+  const mo = new MutationObserver(()=>{
+    if(el.classList.contains('active')) dispListRender();
+  });
+  mo.observe(el, { attributes:true, attributeFilter:['class'] });
+})();
+
+/* ===== Y-1: 기사용 화면 ===== */
+// 상태 저장: { [truckId]: { departedAt, returnedAt, arrivals: { [orderId]: timestamp } } }
+if(!window.DRV_STATUS) window.DRV_STATUS = {};
+
+function drvGetLatestConfirmed(){
+  const list = window.DISP_CONFIRMED_LIST || [];
+  if(!list.length) return null;
+  // 오늘 이후 배차 중 가장 가까운 것, 없으면 최신 (로컬 날짜 기준)
+  const d = new Date();
+  const todayStr = d.getFullYear()+'-'+('0'+(d.getMonth()+1)).slice(-2)+'-'+('0'+d.getDate()).slice(-2);
+  const upcoming = list.filter(x=>x.date>=todayStr).sort((a,b)=>a.date.localeCompare(b.date));
+  return upcoming[0] || list[0];
+}
+
+/* ===== Y-3: 더미 SVG 지도 ===== */
+// 지도 뷰포트(SVG 좌표계)
+const DRV_MAP = {
+  W: 700, H: 420,
+  // 실제 위경도 → SVG 좌표 변환 범위 (수도권 대략)
+  latMin: 36.4, latMax: 37.9,   // 남↔북
+  lngMin: 126.5, lngMax: 127.5  // 서↔동
+};
+
+function drvGeoToXY(lat, lng){
+  const x = (lng - DRV_MAP.lngMin) / (DRV_MAP.lngMax - DRV_MAP.lngMin) * DRV_MAP.W;
+  // SVG는 Y가 아래로 증가 → 위도 반전
+  const y = (DRV_MAP.latMax - lat) / (DRV_MAP.latMax - DRV_MAP.latMin) * DRV_MAP.H;
+  return { x, y };
+}
+
+function drvZoneXY(zone){
+  const c = DISP_ZONE_COORDS[zone];
+  if(!c) return drvGeoToXY(DISP_FACTORY.lat, DISP_FACTORY.lng);
+  return drvGeoToXY(c.lat, c.lng);
+}
+
+/**
+ * confirmed: 확정 스냅샷 (dispConfirm의 결과)
+ * highlightTruckName: 이 차량만 강조 (기사용 화면에서 사용). null이면 전체 표시.
+ */
+window.drvRenderMap = function(confirmed, highlightTruckName){
+  if(!confirmed) return '<div class="drv-map-empty">지도 표시할 배차가 없습니다</div>';
+  const factory = drvGeoToXY(DISP_FACTORY.lat, DISP_FACTORY.lng);
+
+  // 표시할 차량 목록
+  const trucksToShow = highlightTruckName
+    ? confirmed.trucks.filter(t=>t.name===highlightTruckName)
+    : confirmed.trucks;
+
+  // 차량 색상 (4대)
+  const truckColors = { '1호차':'#FF6B35', '2호차':'#2563a8', '3호차':'#2c7a54', '4호차':'#8a5b0e' };
+
+  // 경로 폴리라인 · 배송지 마커
+  const paths = [];
+  const markers = [];
+  const vehicles = [];
+
+  trucksToShow.forEach(t=>{
+    if(!t.stops.length) return;
+    const color = truckColors[t.name] || '#5c6672';
+    const prog = drvGetTruckProgress(confirmed, t.name);
+    const arrivals = prog ? (function(){
+      const truckDef = DISP_TRUCKS.find(x=>x.name===t.name);
+      const st = truckDef ? (DRV_STATUS[truckDef.id]||{}) : {};
+      return st.arrivals || {};
+    })() : {};
+
+    // 경로: 공장 → stops → 공장
+    const pts = [factory, ...t.stops.map(s=>drvZoneXY(s.zone)), factory];
+    const arrivedIdx = t.stops.filter(s=>arrivals[s.id]).length; // 몇 개까지 완료
+    // 완료된 경로(진하게)
+    if(arrivedIdx>0){
+      const donePts = pts.slice(0, arrivedIdx+1);
+      paths.push(`<polyline points="${donePts.map(p=>p.x+','+p.y).join(' ')}" stroke="${color}" stroke-width="3" fill="none" stroke-linecap="round" stroke-linejoin="round"/>`);
+    }
+    // 남은 경로(점선)
+    if(arrivedIdx < pts.length-1){
+      const remainPts = pts.slice(arrivedIdx);
+      paths.push(`<polyline points="${remainPts.map(p=>p.x+','+p.y).join(' ')}" stroke="${color}" stroke-width="2" fill="none" stroke-dasharray="5 5" opacity=".55" stroke-linecap="round" stroke-linejoin="round"/>`);
+    }
+
+    // 배송지 마커
+    t.stops.forEach((s,i)=>{
+      const p = drvZoneXY(s.zone);
+      const arrived = !!arrivals[s.id];
+      const isNext = prog && prog.phase==='running' && prog.nextStop && prog.nextStop.id===s.id;
+      const fill = arrived ? '#2c7a54' : (isNext ? '#FF6B35' : '#fff');
+      const stroke = arrived ? '#2c7a54' : (isNext ? '#FF6B35' : color);
+      const textColor = (arrived || isNext) ? '#fff' : color;
+      markers.push(`
+        <g>
+          <circle cx="${p.x}" cy="${p.y}" r="12" fill="${fill}" stroke="${stroke}" stroke-width="2"/>
+          <text x="${p.x}" y="${p.y}" text-anchor="middle" dominant-baseline="central" font-size="11" font-weight="700" fill="${textColor}">${i+1}</text>
+          <text x="${p.x}" y="${p.y+22}" text-anchor="middle" font-size="10" font-weight="600" fill="#1b2430">${s.cust.slice(0,8)}</text>
+        </g>`);
+    });
+
+    // 차량 아이콘 위치
+    // 출발 전: 공장 옆
+    // 배송 중: 완료된 마지막 지점 (or 다음 지점 살짝 앞)
+    // 복귀 중: 마지막 배송지에서 공장 방향으로 60%
+    // 복귀 완료: 공장
+    let vx, vy;
+    if(prog && prog.phase==='wait'){ vx = factory.x-16; vy = factory.y; }
+    else if(prog && prog.phase==='running'){
+      const lastArr = arrivedIdx>0 ? drvZoneXY(t.stops[arrivedIdx-1].zone) : factory;
+      const nextP = drvZoneXY(t.stops[arrivedIdx].zone);
+      // 마지막 도착지에서 다음 목적지 방향으로 30%
+      vx = lastArr.x + (nextP.x - lastArr.x)*0.3;
+      vy = lastArr.y + (nextP.y - lastArr.y)*0.3;
+    }
+    else if(prog && prog.phase==='last-mile'){
+      const lastStop = drvZoneXY(t.stops[t.stops.length-1].zone);
+      vx = lastStop.x + (factory.x - lastStop.x)*0.6;
+      vy = lastStop.y + (factory.y - lastStop.y)*0.6;
+    }
+    else if(prog && prog.phase==='returned'){ vx = factory.x+16; vy = factory.y; }
+    else { vx = factory.x-16; vy = factory.y; }
+
+    vehicles.push(`
+      <g style="transition:transform .5s">
+        <rect x="${vx-14}" y="${vy-9}" width="28" height="18" rx="4" fill="${color}"/>
+        <text x="${vx}" y="${vy}" text-anchor="middle" dominant-baseline="central" font-size="10" font-weight="700" fill="#fff">${t.name.replace('호차','')}</text>
+      </g>`);
+  });
+
+  return `
+    <svg viewBox="0 0 ${DRV_MAP.W} ${DRV_MAP.H}" xmlns="http://www.w3.org/2000/svg" style="width:100%;background:#f4f6f9;border-radius:14px;display:block">
+      <!-- 배경 그리드 (지도 느낌) -->
+      <defs>
+        <pattern id="drv-grid" width="40" height="40" patternUnits="userSpaceOnUse">
+          <path d="M 40 0 L 0 0 0 40" fill="none" stroke="#e4e8ee" stroke-width="1"/>
+        </pattern>
+      </defs>
+      <rect width="${DRV_MAP.W}" height="${DRV_MAP.H}" fill="url(#drv-grid)"/>
+
+      <!-- 경로 -->
+      ${paths.join('')}
+
+      <!-- 공장 -->
+      <g>
+        <rect x="${factory.x-16}" y="${factory.y-16}" width="32" height="32" rx="6" fill="#1b2430"/>
+        <text x="${factory.x}" y="${factory.y}" text-anchor="middle" dominant-baseline="central" font-size="15" fill="#fff">🏭</text>
+        <text x="${factory.x}" y="${factory.y+28}" text-anchor="middle" font-size="10" font-weight="700" fill="#1b2430">엘앤피</text>
+      </g>
+
+      <!-- 배송지 마커 -->
+      ${markers.join('')}
+
+      <!-- 차량 -->
+      ${vehicles.join('')}
+
+      <!-- 안내 배지 -->
+      <g>
+        <rect x="${DRV_MAP.W-200}" y="12" width="188" height="26" rx="13" fill="rgba(255,255,255,.9)" stroke="#e4e8ee"/>
+        <text x="${DRV_MAP.W-106}" y="25" text-anchor="middle" dominant-baseline="central" font-size="10.5" font-weight="600" fill="#8a929c">🗺 실제 지도 연동 예정 (Kakao)</text>
+      </g>
+    </svg>`;
+};
+
+/* ===== Y-2: 특정 확정본 + 특정 차량의 진행 상태 요약 ===== */
+window.drvGetTruckProgress = function(confirmed, truckName){
+  if(!confirmed) return null;
+  const t = confirmed.trucks.find(x=>x.name===truckName);
+  if(!t) return null;
+  const truckDef = DISP_TRUCKS.find(x=>x.name===truckName);
+  const truckId = truckDef ? truckDef.id : null;
+  const status = (window.DRV_STATUS||{})[truckId] || {};
+  const arrivals = status.arrivals || {};
+  const arrivedCount = t.stops.filter(s=>arrivals[s.id]).length;
+  const total = t.stops.length;
+  const departed = !!status.departedAt;
+  const returned = !!status.returnedAt;
+  const allArrived = total>0 && arrivedCount===total;
+
+  let phase, phaseText, color;
+  if(returned){ phase='returned'; phaseText='복귀 완료'; color='#2c7a54'; }
+  else if(allArrived){ phase='last-mile'; phaseText='복귀 중'; color='#c04a12'; }
+  else if(departed){ phase='running'; phaseText=`배송중 ${arrivedCount}/${total}`; color='#FF6B35'; }
+  else if(total===0){ phase='none'; phaseText='배정 없음'; color='#8a929c'; }
+  else { phase='wait'; phaseText='출발 대기'; color='#5c6672'; }
+
+  // 다음 배송지
+  const nextIdx = t.stops.findIndex(s=>!arrivals[s.id]);
+  const nextStop = nextIdx>=0 ? t.stops[nextIdx] : null;
+
+  return { phase, phaseText, color, arrivedCount, total, departed, returned, allArrived, nextStop, departedAt:status.departedAt, returnedAt:status.returnedAt };
+};
+
+window.drvFillDrivers = function(){
+  const sel = document.getElementById('drv-driver-select');
+  if(!sel) return;
+  const cur = sel.value;
+  sel.innerHTML = '<option value="">- 선택 -</option>' +
+    (DISP_TRUCKS||[]).map(t=>`<option value="${t.id}">${t.name} · ${t.driver}</option>`).join('');
+  if(cur) sel.value = cur;
+};
+
+window.drvRender = function(){
+  drvFillDrivers();
+  const body = document.getElementById('drv-body');
+  if(!body) return;
+  const sel = document.getElementById('drv-driver-select');
+  const truckId = sel ? sel.value : '';
+
+  if(!truckId){
+    body.innerHTML = `<div class="drv-empty"><div class="em">🚙</div><div class="t">기사님을 선택하세요</div></div>`;
+    return;
+  }
+  const c = drvGetLatestConfirmed();
+  if(!c){
+    body.innerHTML = `<div class="drv-empty"><div class="em">📅</div><div class="t">확정된 배차가 없습니다</div></div>`;
+    return;
+  }
+  const truck = DISP_TRUCKS.find(t=>t.id===truckId);
+  const confirmedTruck = c.trucks.find(t=>t.name===truck.name);
+  if(!confirmedTruck || !confirmedTruck.stops.length){
+    body.innerHTML = `<div class="drv-empty"><div class="em">✨</div><div class="t">${truck.name} ${truck.driver} 기사님은 오늘 배차가 없습니다</div></div>`;
+    return;
+  }
+
+  const status = DRV_STATUS[truckId] = DRV_STATUS[truckId] || { departedAt:null, returnedAt:null, arrivals:{} };
+  const stops = confirmedTruck.stops;
+  const arrivedCount = stops.filter(s=>status.arrivals[s.id]).length;
+  const departed = !!status.departedAt;
+  const returned = !!status.returnedAt;
+  const allArrived = arrivedCount === stops.length;
+
+  // 다음 목적지 찾기
+  const nextIdx = stops.findIndex(s=>!status.arrivals[s.id]);
+
+  // 요약
+  const statusText = returned ? '복귀 완료'
+    : allArrived ? '전체 배송 완료 · 복귀 대기'
+    : departed ? `배송중 · ${arrivedCount}/${stops.length} 완료`
+    : '출발 대기';
+
+  const summary = `
+    <div class="drv-summary">
+      <div>
+        <div class="h">${c.date} 배차 · ${truck.name} ${truck.driver}</div>
+        <div class="s">${statusText}</div>
+      </div>
+      <div class="stats">
+        총 <b>${confirmedTruck.stops.length}개소</b><br>
+        ${confirmedTruck.load.toLocaleString()}kg · ${confirmedTruck.distanceKm}km
+      </div>
+    </div>`;
+
+  const progress = `
+    <div class="drv-progress">
+      <div class="drv-progress-h">
+        <span>배송 진행률</span>
+        <span>${arrivedCount} / ${stops.length}</span>
+      </div>
+      <div class="drv-progress-bar"><i style="width:${stops.length?arrivedCount/stops.length*100:0}%"></i></div>
+    </div>`;
+
+  const actions = `
+    <div class="drv-actions">
+      ${!departed
+        ? `<button class="drv-btn-depart" onclick="drvDepart('${truckId}')">🚙 출발</button>`
+        : (allArrived && !returned
+          ? `<button class="drv-btn-depart" onclick="drvReturn('${truckId}')">🏠 복귀 완료</button>`
+          : (returned
+            ? `<button class="drv-btn-done">✓ 오늘 운행 종료</button>`
+            : `<button class="drv-btn-return" onclick="drvUndoDepart('${truckId}')">출발 취소</button>`))}
+    </div>`;
+
+  const stopCards = stops.map((s,i)=>{
+    const arrived = !!status.arrivals[s.id];
+    const isNext = departed && !arrived && i===nextIdx;
+    const cls = 'drv-stop' + (arrived?' arrived':'') + (isNext?' next':'');
+    const btn = arrived
+      ? `<div class="drv-stop-btn arrived-tag">✓ ${new Date(status.arrivals[s.id]).toLocaleTimeString('ko-KR',{hour:'2-digit',minute:'2-digit'})}</div>`
+      : (departed
+        ? `<button class="drv-stop-btn arrive" onclick="drvArrive('${truckId}','${s.id}')">도착</button>`
+        : `<div class="drv-stop-btn arrived-tag" style="background:#f4f6f9;color:#8a929c">대기</div>`);
+    return `<div class="${cls}">
+      <div class="drv-seq">${i+1}</div>
+      <div class="drv-stop-info">
+        <b>${s.cust}</b>
+        <div class="to">${s.deliverTo||''} · ${s.address||''}</div>
+        <div class="item">${s.item} · ${s.boxes||'-'}박스 · ${(s.weightKg||0).toLocaleString()}kg</div>
+        ${s.note?`<div class="note">⚠ ${s.note}</div>`:''}
+      </div>
+      ${btn}
+    </div>`;
+  }).join('');
+
+  const mapHtml = `<div style="background:#fff;border-radius:16px;padding:14px;margin-bottom:16px;box-shadow:0 2px 10px rgba(24,36,54,.05)">${drvRenderMap(c, truck.name)}</div>`;
+  body.innerHTML = summary + mapHtml + progress + actions + stopCards;
+};
+
+window.drvDepart = function(truckId){
+  const s = DRV_STATUS[truckId] = DRV_STATUS[truckId] || { arrivals:{} };
+  s.departedAt = Date.now();
+  drvRender();
+  if(typeof dispRenderConfirmed==='function' && DISP_CONFIRMED) dispRenderConfirmed();
+  if(typeof dispListRender==='function') dispListRender();
+  if(window.mesToast) mesToast({icon:'🚙',title:'출발 기록됨',desc:'배송을 시작합니다.',actions:'<button class="tp-btn ghost" data-tp="dismiss">닫기</button>'});
+};
+
+window.drvUndoDepart = function(truckId){
+  const s = DRV_STATUS[truckId]; if(!s) return;
+  if(!confirm('출발을 취소할까요? 도착 기록도 함께 초기화됩니다.')) return;
+  s.departedAt = null;
+  s.arrivals = {};
+  drvRender();
+  if(typeof dispRenderConfirmed==='function' && DISP_CONFIRMED) dispRenderConfirmed();
+  if(typeof dispListRender==='function') dispListRender();
+};
+
+window.drvArrive = function(truckId, orderId){
+  const s = DRV_STATUS[truckId] = DRV_STATUS[truckId] || { arrivals:{} };
+  s.arrivals[orderId] = Date.now();
+  drvRender();
+  if(typeof dispRenderConfirmed==='function' && DISP_CONFIRMED) dispRenderConfirmed();
+  if(typeof dispListRender==='function') dispListRender();
+  if(window.mesToast) mesToast({icon:'✓',title:'도착 기록됨',desc:'다음 배송지로 이동하세요.',actions:'<button class="tp-btn ghost" data-tp="dismiss">닫기</button>'});
+};
+
+window.drvReturn = function(truckId){
+  const s = DRV_STATUS[truckId]; if(!s) return;
+  s.returnedAt = Date.now();
+  drvRender();
+  if(typeof dispRenderConfirmed==='function' && DISP_CONFIRMED) dispRenderConfirmed();
+  if(typeof dispListRender==='function') dispListRender();
+  if(window.mesToast) mesToast({icon:'🏠',title:'복귀 완료',desc:'오늘 운행이 종료되었습니다.',actions:'<button class="tp-btn ghost" data-tp="dismiss">닫기</button>'});
+};
+
+// 화면 진입 감지 → 렌더
+(function watchDrv(){
+  const el = document.getElementById('scr-driver');
+  if(!el) return;
+  const mo = new MutationObserver(()=>{
+    if(el.classList.contains('active')) drvRender();
+  });
+  mo.observe(el, { attributes:true, attributeFilter:['class'] });
+})();
+
 /* ===== U-3: 납품 완료 증빙 (사진·서명 시뮬) ===== */
 let DISP_PROOF_TARGET = null;
 
@@ -12497,8 +13692,27 @@ window.dispProofSave = function(){
   if(window.mesToast) mesToast({icon:'✅',title:'납품 완료 기록',desc:o.cust+' 완료 기록 저장',actions:'<button class="tp-btn ghost" data-tp="dismiss">닫기</button>'});
 };
 
+/* ===== X-4: 적재 완료 토글 ===== */
+window.dispLoadedToggle = function(id){
+  if(!DISP_CONFIRMED) return;
+  // 이 오더가 있는 truck.stop 찾기
+  let hit = null;
+  for(const t of DISP_CONFIRMED.trucks){
+    const s = t.stops.find(x=>x.id===id);
+    if(s){ hit = s; break; }
+  }
+  if(!hit) return;
+  hit.loaded = !hit.loaded;
+  hit.loadedAt = hit.loaded ? new Date().toLocaleString('ko-KR') : null;
+  // 원본 ORDERS에도 반영 (선택)
+  const o = DISP_ORDERS.find(x=>x.id===id);
+  if(o){ o.loaded = hit.loaded; o.loadedAt = hit.loadedAt; }
+  dispRenderConfirmed();
+};
+
 function dispCloseOut(){ d$('disp-outModal').classList.remove('show'); }
 function dispPrintOut(){
+  if(DISP_EDIT_MODE){ alert('수정을 저장하거나 취소한 후 인쇄하세요.'); return; }
   document.body.classList.add('disp-printing');
   const done = () => document.body.classList.remove('disp-printing');
   window.onafterprint = done;
@@ -12592,6 +13806,16 @@ window.dispAddFromShipPlan = function(planNo, cust, item, qty, date){
 
 /* ---------- init ---------- */
 DISP_ORDERS.forEach(o => o.zone = dispResolveZone(o.address));
+// X-1: 배차일 기본값 = 내일 (배송일)
+(function(){
+  const tomorrow = new Date();
+  tomorrow.setDate(tomorrow.getDate()+1);
+  const y = tomorrow.getFullYear();
+  const m = ('0'+(tomorrow.getMonth()+1)).slice(-2);
+  const d = ('0'+tomorrow.getDate()).slice(-2);
+  const el = document.getElementById('disp-date');
+  if(el) el.value = y+'-'+m+'-'+d;
+})();
 dispRenderChips();
 dispAuto();
 </script>
@@ -12622,6 +13846,20 @@ dispAuto();
           <button class="primary" style="background:#2c7a54;border-color:#2c7a54;color:#fff" onclick="dispProofSave()">✓ 완료 기록</button>
         </div>
       </div>
+    </div>
+  </div>
+
+<!-- ===== Z-2 피킹 확정 목록: 상세 모달 ===== -->
+  <div class="pl-modal" id="pl-detail-modal" onclick="if(event.target===this)pickListCloseDetail()">
+    <div class="pl-modal-box">
+      <div class="pl-modal-head">
+        <div>
+          <h3 id="pl-modal-head-t">-</h3>
+          <div class="sub" id="pl-modal-head-sub">-</div>
+        </div>
+        <span class="x" onclick="pickListCloseDetail()">✕</span>
+      </div>
+      <div class="pl-modal-body" id="pl-modal-body"></div>
     </div>
   </div>
 
@@ -12660,37 +13898,349 @@ dispAuto();
 /* 피킹 상태: id -> true(준비완료)/false — 주문 데이터는 배차의 DISP_ORDERS 공유 */
 let PICK_STATE = {};
 DISP_ORDERS.forEach(o => PICK_STATE[o.id] = false);
+// Z-1: 마감된 피킹 스냅샷 배열 · 현재 세션 대상 배차일
+if(!window.PICK_LIST) window.PICK_LIST = [];
+if(!window.PICK_CURRENT_DATE) window.PICK_CURRENT_DATE = null;
 
 const p$ = id => document.getElementById(id);
 const PICK_LOC_CLASS = {'창고':'loc-wh','공정중':'loc-wip','부분입고':'loc-part'};
 
 p$('pick-today').textContent = new Date().toLocaleDateString('ko-KR',{month:'long',day:'numeric',weekday:'short'}) + ' 준비';
 
-function pickRender(){
-  const wrap = p$('pick-list-body'); wrap.innerHTML='';
-  DISP_ORDERS.forEach(o=>{
-    const el = document.createElement('div');
-    el.className = 'pick' + (PICK_STATE[o.id]?' done':'');
-    el.innerHTML =
-      `<div class="pick-chk" onclick="pickToggle('${o.id}')">✓</div>`+
-      `<div class="p-main"><b>${o.cust}</b> · ${o.item}`+
-        `<div class="p-sub">${o.deliverTo||''} · ${o.boxes||'-'}박스 · ${o.weightKg.toLocaleString()}kg · 작업기 ${o.machine||'-'}</div>`+
-        (o.note?`<div class="p-note">⚠ ${o.note}</div>`:'')+
-      `</div>`+
-      `<span class="p-loc ${PICK_LOC_CLASS[o.location]||'loc-part'}">${o.location}</span>`+
-      `<div class="p-actions"><button onclick="pickShowQr('${o.id}')">QR</button></div>`;
-    wrap.appendChild(el);
-  });
-  const done = Object.values(PICK_STATE).filter(v=>v).length;
-  const total = DISP_ORDERS.length;
-  p$('pick-s-total').textContent = total;
-  p$('pick-s-done').textContent  = done;
-  p$('pick-s-wait').textContent  = total - done;
-  p$('pick-p-txt').textContent   = `${done} / ${total}`;
-  p$('pick-p-bar').style.width   = (total?done/total*100:0) + '%';
+/* Z-1: 피킹 대상 배차일 결정 (PICK_CURRENT_DATE 있으면 그 값, 없으면 가장 임박한 확정 배차) */
+function pickResolveTargetDate(){
+  if(PICK_CURRENT_DATE) return PICK_CURRENT_DATE;
+  const list = window.DISP_CONFIRMED_LIST || [];
+  if(!list.length) return null;
+  const d = new Date();
+  const todayStr = d.getFullYear()+'-'+('0'+(d.getMonth()+1)).slice(-2)+'-'+('0'+d.getDate()).slice(-2);
+  const upcoming = list.filter(x=>x.date>=todayStr).sort((a,b)=>a.date.localeCompare(b.date));
+  return (upcoming[0] || list[0]).date;
 }
 
-function pickToggle(id){ PICK_STATE[id] = !PICK_STATE[id]; pickRender(); }
+// 그 날짜의 배차에 포함된 오더들 (자차만, 픽업/반품 제외)
+function pickResolveTargetOrders(date){
+  const c = (window.DISP_CONFIRMED_LIST||[]).find(x=>x.date===date);
+  if(!c) return [];
+  const ids = [];
+  (c.trucks||[]).forEach(t=> t.stops.forEach(s=> ids.push(s.id)));
+  return ids.filter(id => {
+    const o = DISP_ORDERS.find(x=>x.id===id);
+    return o && o.type !== 'pickup' && o.type !== 'reverse';
+  });
+}
+
+// 이 배차일이 이미 마감됐는지
+function pickFindSaved(date){
+  return (PICK_LIST||[]).find(p => p.date === date);
+}
+
+window.pickRender = function(){
+  const body = p$('pick-list-body');
+  if(!body) return;
+
+  const targetDate = pickResolveTargetDate();
+  PICK_CURRENT_DATE = targetDate;
+
+  // 상단 헤더(날짜/저장 여부/버튼) 갱신
+  pickRenderHeader(targetDate);
+
+  if(!targetDate){
+    body.innerHTML = `<div class="pick-empty" style="background:#fff;border-radius:18px;padding:60px 40px;text-align:center;color:#8a929c;box-shadow:0 2px 10px rgba(24,36,54,.05)">
+      <div style="font-size:40px;margin-bottom:14px">📅</div>
+      <div style="font-size:15px;font-weight:600;color:#5c6672;margin-bottom:6px">확정된 배차가 없습니다</div>
+      <div style="font-size:13px">배차 보드에서 배차를 확정하면 피킹 대상이 자동으로 만들어집니다.</div>
+    </div>`;
+    p$('pick-s-total').textContent = 0;
+    p$('pick-s-done').textContent = 0;
+    p$('pick-s-wait').textContent = 0;
+    p$('pick-p-txt').textContent = '0 / 0';
+    p$('pick-p-bar').style.width = '0%';
+    return;
+  }
+
+  const saved = pickFindSaved(targetDate);
+  const targetIds = saved ? saved.targetOrders : pickResolveTargetOrders(targetDate);
+  const targetOrders = targetIds.map(id => DISP_ORDERS.find(o=>o.id===id)).filter(Boolean);
+
+  // 체크 상태 결정: 저장된 것 있으면 그것, 없으면 세션 PICK_STATE
+  const stateNow = saved ? saved.picked : PICK_STATE;
+  const readOnly = !!(saved && !saved.reopened);
+
+  body.innerHTML = targetOrders.map(o=>{
+    const done = !!stateNow[o.id];
+    return `<div class="pick${done?' done':''}">
+      <div class="pick-chk" onclick="${readOnly?'':'pickToggle(\''+o.id+'\')'}" ${readOnly?'style="cursor:default;opacity:.7"':''}>✓</div>
+      <div class="p-main">
+        <b>${o.cust}</b> · ${o.item}
+        <div class="p-sub">${o.deliverTo||''} · ${o.boxes||'-'}박스 · ${(o.weightKg||0).toLocaleString()}kg · 작업기 ${o.machine||'-'}</div>
+        ${o.note?`<div class="p-note">⚠ ${o.note}</div>`:''}
+      </div>
+      <span class="p-loc ${PICK_LOC_CLASS[o.location]||'loc-part'}">${o.location||'-'}</span>
+      <div class="p-actions"><button onclick="pickShowQr('${o.id}')">QR</button></div>
+    </div>`;
+  }).join('') || '<div class="pick-empty" style="padding:20px;color:#8a929c;text-align:center">피킹 대상이 없습니다</div>';
+
+  const doneN = targetOrders.filter(o=>stateNow[o.id]).length;
+  const totalN = targetOrders.length;
+  p$('pick-s-total').textContent = totalN;
+  p$('pick-s-done').textContent  = doneN;
+  p$('pick-s-wait').textContent  = totalN - doneN;
+  p$('pick-p-txt').textContent   = `${doneN} / ${totalN}`;
+  p$('pick-p-bar').style.width   = (totalN?doneN/totalN*100:0) + '%';
+};
+
+function pickRenderHeader(targetDate){
+  let host = p$('pick-header-host');
+  if(!host){
+    const wrap = document.querySelector('#scr-picking .wrap') || document.querySelector('#scr-picking');
+    if(!wrap) return;
+    host = document.createElement('div');
+    host.id = 'pick-header-host';
+    const progress = wrap.querySelector('.progress');
+    if(progress) wrap.insertBefore(host, progress);
+    else wrap.appendChild(host);
+  }
+
+  if(!targetDate){ host.innerHTML = ''; return; }
+
+  const saved = pickFindSaved(targetDate);
+  const dt = new Date(targetDate);
+  const md = ('0'+(dt.getMonth()+1)).slice(-2)+'월 '+dt.getDate()+'일';
+  const dow = ['일','월','화','수','목','금','토'][dt.getDay()];
+
+  let statusChip, actionBtn;
+  if(!saved){
+    statusChip = '<span style="background:#fff4ea;color:#c04a12;padding:5px 12px;border-radius:999px;font-size:12px;font-weight:700">준비 중</span>';
+    actionBtn = `<button onclick="pickComplete()" style="background:#2c7a54;color:#fff;border:none;border-radius:12px;padding:11px 18px;font-size:14px;font-weight:700;cursor:pointer">✓ 준비 완료</button>`;
+  } else if(saved.reopened){
+    statusChip = '<span style="background:#fff4ea;color:#c04a12;padding:5px 12px;border-radius:999px;font-size:12px;font-weight:700">재편집 중</span>';
+    actionBtn = `<button onclick="pickComplete()" style="background:#2c7a54;color:#fff;border:none;border-radius:12px;padding:11px 18px;font-size:14px;font-weight:700;cursor:pointer">✓ 다시 완료</button>`;
+  } else {
+    statusChip = '<span style="background:#e6f3ec;color:#2c7a54;padding:5px 12px;border-radius:999px;font-size:12px;font-weight:700">✓ 마감 완료 · ' + (saved.savedAt.split(' ').slice(1).join(' ')) + '</span>';
+    actionBtn = `<button onclick="pickReopen()" style="background:#fff;color:#5c6672;border:1.5px solid #e4e8ee;border-radius:12px;padding:11px 18px;font-size:14px;font-weight:600;cursor:pointer">✎ 재편집</button>`;
+  }
+
+  host.innerHTML = `
+    <div style="background:#fff;border-radius:18px;padding:20px 24px;margin-bottom:16px;box-shadow:0 2px 12px rgba(24,36,54,.05);display:flex;align-items:center;justify-content:space-between;gap:14px;flex-wrap:wrap">
+      <div>
+        <div style="font-size:11.5px;font-weight:700;color:#8a929c;letter-spacing:.06em;text-transform:uppercase;margin-bottom:5px">대상 배차일</div>
+        <div style="display:flex;align-items:baseline;gap:10px;flex-wrap:wrap">
+          <span style="font-size:22px;font-weight:700;letter-spacing:-.02em;color:#1b2430">${md} <span style="font-size:14px;color:#FF6B35;font-weight:600">${dow}요일</span></span>
+          ${statusChip}
+        </div>
+      </div>
+      ${actionBtn}
+    </div>`;
+}
+
+window.pickComplete = function(){
+  const date = PICK_CURRENT_DATE;
+  if(!date){ alert('대상 배차일이 없습니다.'); return; }
+  const existing = pickFindSaved(date);
+  const targetIds = existing ? existing.targetOrders : pickResolveTargetOrders(date);
+  const totalN = targetIds.length;
+  const doneN = targetIds.filter(id => (existing ? existing.picked : PICK_STATE)[id]).length;
+  if(doneN < totalN){
+    if(!confirm(`아직 ${totalN-doneN}건이 준비 대기입니다. 그대로 마감할까요?`)) return;
+  }
+  const nowStr = new Date().toLocaleString('ko-KR');
+  const pickedCopy = existing
+    ? Object.assign({}, existing.picked)
+    : (function(){ const r={}; targetIds.forEach(id=>{ if(PICK_STATE[id]) r[id]=true; }); return r; })();
+
+  if(existing){
+    existing.picked = pickedCopy;
+    existing.savedAt = nowStr;
+    existing.reopened = false;
+    existing.logs = existing.logs || [];
+    existing.logs.push({ action:'재마감', at:nowStr, by:'예람', detail:`${doneN}/${totalN} 준비완료` });
+  } else {
+    const snapshot = {
+      date: date,
+      savedAt: nowStr,
+      targetOrders: targetIds,
+      picked: pickedCopy,
+      reopened: false,
+      logs: [{ action:'마감', at:nowStr, by:'예람', detail:`${doneN}/${totalN} 준비완료` }]
+    };
+    PICK_LIST.unshift(snapshot);
+    PICK_STATE = {};
+  }
+  pickRender();
+  if(typeof pickListRender === 'function') pickListRender();
+  if(window.mesToast) mesToast({icon:'✅',title:'피킹 마감 완료',desc:`${date} · ${doneN}/${totalN} 준비완료`,actions:'<button class="tp-btn ghost" data-tp="dismiss">닫기</button>'});
+};
+
+window.pickReopen = function(){
+  const date = PICK_CURRENT_DATE;
+  const saved = pickFindSaved(date);
+  if(!saved) return;
+  if(!confirm(`${date} 피킹을 다시 편집할까요?`)) return;
+  saved.reopened = true;
+  saved.logs = saved.logs || [];
+  saved.logs.push({ action:'재오픈', at:new Date().toLocaleString('ko-KR'), by:'예람', detail:'조회→편집 전환' });
+  pickRender();
+  if(typeof pickListRender === 'function') pickListRender();
+};
+
+window.pickGotoDate = function(date){
+  PICK_CURRENT_DATE = date;
+  if(window.selectMenu){
+    const menuEl = document.querySelector('.menu-item[onclick*="\'picking\'"]');
+    if(menuEl) selectMenu(menuEl, 'picking');
+  }
+};
+
+/* ===== Z-2: 피킹 확정 목록 ===== */
+window.pickListRender = function(){
+  const body = document.getElementById('pl-list-body');
+  if(!body) return;
+  const list = window.PICK_LIST || [];
+
+  // 통계
+  const totalItems = list.reduce((s,p)=> s + (p.targetOrders||[]).length, 0);
+  const totalReopen = list.reduce((s,p)=> s + (p.logs||[]).filter(l=>l.action==='재오픈').length, 0);
+  const el1 = document.getElementById('pl-s-total');  if(el1) el1.textContent = list.length;
+  const el2 = document.getElementById('pl-s-items');  if(el2) el2.textContent = totalItems;
+  const el3 = document.getElementById('pl-s-reopen'); if(el3) el3.textContent = totalReopen;
+
+  if(!list.length){
+    body.innerHTML = `<div class="pl-empty">
+      <div class="em">📅</div>
+      <div class="t">마감된 피킹이 아직 없습니다</div>
+      <div style="font-size:13px">피킹 리스트에서 [✓ 준비 완료] 누르면 여기에 날짜별로 쌓입니다.</div>
+    </div>`;
+    return;
+  }
+
+  const dow = ['일','월','화','수','목','금','토'];
+  const localYmd = d => d.getFullYear()+'-'+('0'+(d.getMonth()+1)).slice(-2)+'-'+('0'+d.getDate()).slice(-2);
+  const todayStr = localYmd(new Date());
+  const tomorrowStr = (function(){ const d=new Date();d.setDate(d.getDate()+1);return localYmd(d); })();
+
+  body.innerHTML = list.map(p=>{
+    const dt = new Date(p.date);
+    const md = ('0'+(dt.getMonth()+1)).slice(-2)+'.'+('0'+dt.getDate()).slice(-2);
+    const y = dt.getFullYear();
+    const dowText = dow[dt.getDay()]+'요일';
+    const isToday = p.date === todayStr;
+    const isTomorrow = p.date === tomorrowStr;
+    const isSoon = isToday || isTomorrow;
+
+    const total = (p.targetOrders||[]).length;
+    const done = (p.targetOrders||[]).filter(id => p.picked && p.picked[id]).length;
+    const reopenCount = (p.logs||[]).filter(l=>l.action==='재오픈').length;
+
+    const tags = [];
+    if(isToday) tags.push('<span class="pl-tag today">오늘</span>');
+    else if(isTomorrow) tags.push('<span class="pl-tag today">내일</span>');
+    if(p.reopened) tags.push('<span class="pl-tag reopen">재편집 중</span>');
+    if(reopenCount && !p.reopened) tags.push(`<span class="pl-tag reopen">재편집 ${reopenCount}회</span>`);
+    if(done < total) tags.push(`<span class="pl-tag pending">미완료 ${total-done}건</span>`);
+
+    return `<div class="pl-card${isSoon?' today':''}" onclick="pickListOpenDetail('${p.date}')">
+      <div class="pl-date">
+        <div class="pl-md">${md}</div>
+        <div class="pl-y">${y}</div>
+        <div class="pl-dow">${dowText}</div>
+      </div>
+      <div class="pl-info">
+        <div class="pl-info-top">${tags.join('')}</div>
+        <div class="pl-summary">
+          <span>대상 <b>${total}건</b></span>
+          <span>완료 <b>${done}</b></span>
+          <span>대기 <b>${total-done}</b></span>
+        </div>
+        <div class="pl-savedat">마지막 마감 ${p.savedAt}</div>
+      </div>
+      <div class="pl-progress-mini">
+        <div class="pm-h"><span>준비율</span><span>${total?Math.round(done/total*100):0}%</span></div>
+        <div class="pm-bar"><i style="width:${total?done/total*100:0}%"></i></div>
+      </div>
+      <div class="pl-arrow">›</div>
+    </div>`;
+  }).join('');
+};
+
+// 상세 모달 열기
+window.pickListOpenDetail = function(date){
+  const p = (window.PICK_LIST||[]).find(x=>x.date===date);
+  if(!p) return;
+
+  const items = (p.targetOrders||[]).map(id=>{
+    const o = DISP_ORDERS.find(x=>x.id===id);
+    if(!o) return '';
+    const done = !!(p.picked && p.picked[id]);
+    return `<div class="pl-item${done?' done':''}">
+      <div class="chk">✓</div>
+      <div class="info">
+        <b>${o.cust}</b> · ${o.item}
+        <div class="sub2">${o.deliverTo||''} · ${o.boxes||'-'}박스 · ${(o.weightKg||0).toLocaleString()}kg</div>
+      </div>
+      <div style="font-size:11.5px;font-weight:600;color:${done?'#2c7a54':'#8a929c'}">${done?'준비 완료':'대기'}</div>
+    </div>`;
+  }).join('');
+
+  const logs = (p.logs||[]).slice().reverse().map(l=>{
+    const cls = l.action==='마감' ? 'mark'
+      : l.action==='재오픈' ? 'reopen'
+      : l.action==='재마감' ? 'remark' : '';
+    return `<div class="pl-log-item">
+      <div class="act ${cls}">${l.action}</div>
+      <div class="det">${l.detail||'-'}</div>
+      <div class="at">${l.at}</div>
+    </div>`;
+  }).join('');
+
+  const dt = new Date(date);
+  const dow = ['일','월','화','수','목','금','토'][dt.getDay()];
+  const dateText = `${dt.getMonth()+1}월 ${dt.getDate()}일 (${dow})`;
+
+  document.getElementById('pl-modal-body').innerHTML = `
+    <div class="sec">피킹 항목 (${p.targetOrders.length}건)</div>
+    ${items || '<div style="color:#8a929c;font-size:13px;padding:10px 0">항목 없음</div>'}
+    <div class="sec">이력</div>
+    ${logs}
+    <div style="margin-top:20px;padding-top:16px;border-top:1px solid #f0f2f5;display:flex;justify-content:flex-end;gap:8px">
+      <button onclick="pickListGoEdit('${date}')" style="background:#fff4ea;color:#c04a12;border:1.5px solid #FF6B35;border-radius:10px;padding:9px 14px;font-size:13px;font-weight:600;cursor:pointer">📋 피킹 화면에서 열기</button>
+      <button onclick="pickListCloseDetail()" style="background:#f4f6f9;color:#5c6672;border:none;border-radius:10px;padding:9px 14px;font-size:13px;font-weight:600;cursor:pointer">닫기</button>
+    </div>
+  `;
+  document.getElementById('pl-modal-head-t').textContent = dateText + ' 피킹';
+  document.getElementById('pl-modal-head-sub').textContent = `마감 ${p.savedAt} · ${p.reopened?'재편집 중':'마감 완료'}`;
+  document.getElementById('pl-detail-modal').classList.add('show');
+};
+window.pickListCloseDetail = function(){ document.getElementById('pl-detail-modal').classList.remove('show'); };
+
+// 상세 모달에서 [피킹 화면에서 열기] → Z-1의 진입 링크 재사용
+window.pickListGoEdit = function(date){
+  pickListCloseDetail();
+  if(typeof pickGotoDate === 'function') pickGotoDate(date);
+};
+
+// 화면 전환 감지 → 렌더
+(function watchPickList(){
+  const el = document.getElementById('scr-pickinglist');
+  if(!el) return;
+  const mo = new MutationObserver(()=>{
+    if(el.classList.contains('active')) pickListRender();
+  });
+  mo.observe(el, { attributes:true, attributeFilter:['class'] });
+})();
+
+window.pickToggle = function(id){
+  const date = PICK_CURRENT_DATE;
+  const saved = pickFindSaved(date);
+  if(saved){
+    if(!saved.reopened) return;   // 조회 전용
+    saved.picked = saved.picked || {};
+    saved.picked[id] = !saved.picked[id];
+  } else {
+    PICK_STATE[id] = !PICK_STATE[id];
+  }
+  pickRender();
+};
 
 function pickShowQr(id){
   const o = DISP_ORDERS.find(o=>o.id===id);
@@ -12714,16 +14264,32 @@ function pickCloseQr(){ p$('pick-qrModal').classList.remove('show'); }
 function pickOpenScan(){ p$('pick-scanModal').classList.add('show'); }
 function pickCloseScan(){ p$('pick-scanModal').classList.remove('show'); }
 function pickSimulateScan(){
-  const pending = DISP_ORDERS.filter(o=>!PICK_STATE[o.id]);
-  if(!pending.length){ alert('모든 완성품이 이미 준비완료입니다.'); return; }
-  const target = pending[Math.floor(Math.random()*pending.length)];
-  PICK_STATE[target.id] = true;
-  pickCloseScan();
-  pickRender();
+  const date = PICK_CURRENT_DATE;
+  const saved = pickFindSaved(date);
+  const targetIds = saved ? saved.targetOrders : pickResolveTargetOrders(date);
+  const stateNow = saved ? saved.picked : PICK_STATE;
+  const pendingIds = targetIds.filter(id => !stateNow[id]);
+  if(!pendingIds.length){ alert('모든 완성품이 이미 준비완료입니다.'); return; }
+  if(saved && !saved.reopened){ alert('마감된 피킹은 재편집 후 스캔할 수 있습니다.'); return; }
+  const targetId = pendingIds[Math.floor(Math.random()*pendingIds.length)];
+  if(saved){ saved.picked = saved.picked || {}; saved.picked[targetId] = true; }
+  else { PICK_STATE[targetId] = true; }
+  const target = DISP_ORDERS.find(o=>o.id===targetId);
+  pickCloseScan(); pickRender();
   setTimeout(()=> alert(`✓ ${target.cust} · ${target.item} 준비완료`), 100);
 }
 
 pickRender();
+
+// Z-1: 피킹 화면 진입 감지 → 대상 배차일 재해석 후 렌더
+(function watchPick(){
+  const el = document.getElementById('scr-picking');
+  if(!el) return;
+  const mo = new MutationObserver(()=>{
+    if(el.classList.contains('active')) pickRender();
+  });
+  mo.observe(el, { attributes:true, attributeFilter:['class'] });
+})();
 </script>
 </body>
 </html>
