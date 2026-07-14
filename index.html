@@ -3353,6 +3353,73 @@ select.form-control { cursor: pointer; }
         ];
         function nfmt(n){ return (Math.round(n)||0).toLocaleString('ko-KR'); }
         function nParse(v){ return parseFloat(String(v).replace(/[^0-9.\-]/g,''))||0; }
+        /* ===== HH-2: 수주확정 → 디자인 목록 자동 추가 ===== */
+        window.DESIGN_LIST = window.DESIGN_LIST || [];
+        /* ===== GG-1: IndexedDB 영속화 — 새로고침해도 ITEM_DB / CUST_ITEM_MAP 유지 ===== */
+        (function(){
+          var DB_NAME='mes_demo_db', DB_VER=1, _db=null;
+          function _GG1_open(cb){
+            if(_db){ cb(_db); return; }
+            if(!window.indexedDB){ console.warn('GG1: IndexedDB 미지원'); return; }
+            var req=indexedDB.open(DB_NAME, DB_VER);
+            req.onupgradeneeded=function(e){ var db=e.target.result; if(!db.objectStoreNames.contains('kv')) db.createObjectStore('kv'); };
+            req.onsuccess=function(e){ _db=e.target.result; cb(_db); };
+            req.onerror=function(){ console.warn('GG1: IndexedDB 열기 실패'); };
+          }
+          window._GG1_save=function(key, value){
+            _GG1_open(function(db){
+              try{ var tx=db.transaction('kv','readwrite'); tx.objectStore('kv').put(JSON.stringify(value), key); }catch(e){ console.warn('GG1 save 실패', e); }
+            });
+          };
+          window._GG1_load=function(key, cb){
+            _GG1_open(function(db){
+              try{ var req=db.transaction('kv','readonly').objectStore('kv').get(key);
+                req.onsuccess=function(){ cb(req.result?JSON.parse(req.result):null); };
+                req.onerror=function(){ cb(null); };
+              }catch(e){ cb(null); }
+            });
+          };
+          // 페이지 로드 시 저장된 데이터 복원 (초기 시드가 모두 채워진 뒤 병합)
+          window.addEventListener('load', function(){
+            setTimeout(function(){
+              window._GG1_load('ITEM_DB', function(saved){
+                if(saved && Object.keys(saved).length){
+                  window.ITEM_DB=Object.assign(window.ITEM_DB||{}, saved);
+                  if(window._GG1_restoreItemTable) window._GG1_restoreItemTable();
+                }
+              });
+              window._GG1_load('CUST_ITEM_MAP', function(saved){
+                if(saved && saved.length){
+                  window.CUST_ITEM_MAP=saved;
+                  if(window._CC1_renderMap) setTimeout(window._CC1_renderMap, 200);
+                }
+              });
+            }, 400); // mock-api-v2 / ITEM_DB 시드 스크립트가 모두 실행된 뒤
+          });
+        })();
+        // GG-1: 데모 데이터(품목·매칭표) 초기화 — 시연 전 깨끗하게 시작
+        window._GG1_clearAll=function(){
+          if(!confirm('품목·매칭표 데이터를 모두 삭제하고 초기 상태로 돌아갑니다. 계속하시겠습니까?')) return;
+          if(window._GG1_save){ _GG1_save('ITEM_DB', {}); _GG1_save('CUST_ITEM_MAP', []); }
+          window.ITEM_DB={}; window.CUST_ITEM_MAP=[];
+          var tb=document.getElementById('itemTbody'); if(tb) tb.innerHTML='';
+          if(window._CC1_renderMap) _CC1_renderMap();
+          if(window.applyItemFilters) window.applyItemFilters();
+          alert('초기화 완료. 새로고침 없이 바로 품목 등록부터 다시 시작하세요.');
+        };
+        // 복원된 ITEM_DB 품목 중 아직 테이블에 없는 것만 행 추가 (초기 시드 행은 그대로 두고 신규만)
+        window._GG1_restoreItemTable=function(){
+          var tb=document.getElementById('itemTbody');
+          if(!tb || !window.ITEM_DB) return;
+          var existing={};
+          tb.querySelectorAll('.item-sel[data-code]').forEach(function(el){ existing[el.getAttribute('data-code')]=true; });
+          Object.keys(window.ITEM_DB).forEach(function(code){
+            if(existing[code]) return;                 // 이미 그려진 행(정적 시드 포함)은 건너뜀
+            var d=window.ITEM_DB[code]; if(!d) return;
+            if(window._bulkAddRow) window._bulkAddRow(code, d);
+          });
+          if(window.applyItemFilters) window.applyItemFilters();
+        };
         function _IR5_isExisting(code){
           return !!(code && window.ITEM_DB && window.ITEM_DB[code]);
         }
@@ -3573,6 +3640,7 @@ select.form-control { cursor: pointer; }
         window._CC1_delMap=function(i){
           if(!window.confirm('이 매칭을 삭제하시겠습니까?')) return;
           window.CUST_ITEM_MAP.splice(i,1);
+          if(window._GG1_save) _GG1_save('CUST_ITEM_MAP', window.CUST_ITEM_MAP);   // GG-1
           _CC1_renderMap();
         };
         var _CC1_editIdx=-1;
@@ -3614,6 +3682,7 @@ select.form-control { cursor: pointer; }
             var dupIdx=window.CUST_ITEM_MAP.findIndex(function(m){ return m.custName===custName && m.custItemCode===custItemCode; });
             if(dupIdx>=0) window.CUST_ITEM_MAP[dupIdx]=row; else window.CUST_ITEM_MAP.push(row);
           }
+          if(window._GG1_save) _GG1_save('CUST_ITEM_MAP', window.CUST_ITEM_MAP);   // GG-1
           _CC1_closeAdd();
           _CC1_renderMap();
           if(window.showToast) showToast('✅ 매칭표에 저장되었습니다.');
@@ -3640,6 +3709,75 @@ select.form-control { cursor: pointer; }
           var box=document.getElementById('mapOurCodeList');
           if(box && box.style.display!=='none' && e.target.id!=='mapOurCode' && !box.contains(e.target)) box.style.display='none';
         });
+        /* ===== GG-2: 매칭표 엑셀 붙여넣기 일괄등록 (거래처명 · 자재코드 · 우리품목코드 · 비고) ===== */
+        function _GG2_parse(text){
+          var HEADER_KW=['거래처','자재코드','품목코드','코드','비고'];
+          var lines=(text||'').replace(/\r/g,'').split('\n').filter(function(l){return l.trim();});
+          var out=[];
+          lines.forEach(function(line){
+            var cells=line.split('\t').map(function(c){return c.trim();});
+            var hitCnt=0;
+            cells.forEach(function(c){ if(HEADER_KW.some(function(k){return c.indexOf(k)>=0;})) hitCnt++; });
+            if(hitCnt>=2) return;                       // 제목줄 스킵
+            if(cells.length<3) return;
+            var custName=cells[0], custItemCode=cells[1], ourCode=cells[2], note=cells[3]||'';
+            if(!custName || !custItemCode || !ourCode) return;
+            var it=window.ITEM_DB && window.ITEM_DB[ourCode];
+            out.push({ custName:custName, custItemCode:custItemCode, ourCode:ourCode, note:note,
+              mgmt: it?(it.mgmt||''):'', lastPrice: it?(nParse(it.sell)||''):'', _valid:!!it });
+          });
+          return out;
+        }
+        window._GG2_preview=function(){
+          var el=document.getElementById('mapPastePreview'); if(!el) return;
+          var rows=_GG2_parse((document.getElementById('mapPasteArea')||{}).value||'');
+          if(!rows.length){ el.innerHTML=''; return; }
+          var ok=rows.filter(function(r){return r._valid;}).length, bad=rows.length-ok;
+          el.innerHTML='총 '+rows.length+'행 — <span style="color:#1F7145">품목 확인 '+ok+'건</span>'
+            +(bad?' / <span style="color:#C00">ITEM_DB 미확인 '+bad+'건 (등록 후 진행 권장)</span>':'');
+        };
+        window._GG2_openPasteModal=function(){
+          var mo=document.getElementById('mapPasteModal');
+          if(!mo){
+            mo=document.createElement('div'); mo.id='mapPasteModal';
+            mo.style.cssText='display:none;position:fixed;inset:0;background:rgba(0,0,0,0.45);z-index:10000;align-items:center;justify-content:center';
+            mo.innerHTML='<div style="background:#fff;border-radius:12px;width:600px;max-width:94vw;padding:20px 22px;box-shadow:0 12px 40px rgba(0,0,0,0.25)">'
+              +'<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px"><b style="font-size:14px">📋 매칭표 엑셀 붙여넣기</b>'
+              +'<button class="btn btn-outline" style="padding:2px 10px" onclick="_GG2_closePasteModal()">✕</button></div>'
+              +'<div style="font-size:11.5px;color:#777;line-height:1.7;margin-bottom:8px">엑셀에서 아래 순서로 복사해서 붙여넣으세요. 제목줄이 포함돼 있어도 자동으로 건너뜁니다.<br>'
+              +'<b>거래처명</b> [Tab] <b>거래처 자재코드</b> [Tab] <b>우리 품목코드</b> [Tab] 비고(선택)</div>'
+              +'<textarea id="mapPasteArea" oninput="_GG2_preview()" style="width:100%;height:180px;font-size:12px;font-family:monospace;padding:8px;border:1px solid #ddd;border-radius:8px;resize:vertical" placeholder="여기에 붙여넣기 (Ctrl+V)"></textarea>'
+              +'<div id="mapPastePreview" style="margin-top:8px;font-size:12px;min-height:18px"></div>'
+              +'<div style="text-align:right;margin-top:12px"><button class="btn btn-outline" onclick="_GG2_closePasteModal()">취소</button> '
+              +'<button class="btn btn-primary" onclick="_GG2_applyPaste()">일괄 등록</button></div></div>';
+            document.body.appendChild(mo);
+          }
+          document.getElementById('mapPasteArea').value='';
+          document.getElementById('mapPastePreview').innerHTML='';
+          mo.style.display='flex';
+          setTimeout(function(){ document.getElementById('mapPasteArea').focus(); },50);
+        };
+        window._GG2_closePasteModal=function(){ var mo=document.getElementById('mapPasteModal'); if(mo) mo.style.display='none'; };
+        window._GG2_applyPaste=function(){
+          var rows=_GG2_parse((document.getElementById('mapPasteArea')||{}).value||'');
+          if(!rows.length){ alert('등록할 데이터가 없습니다.'); return; }
+          var badRows=rows.filter(function(r){return !r._valid;});
+          if(badRows.length){
+            if(!confirm(badRows.length+'건은 우리 품목코드가 ITEM_DB에 없습니다.\n그래도 등록하시겠습니까?\n(품목 등록 후 수정 가능)')) return;
+          }
+          window.CUST_ITEM_MAP=window.CUST_ITEM_MAP||[];
+          var added=0, updated=0;
+          rows.forEach(function(r){
+            var exists=window.CUST_ITEM_MAP.findIndex(function(m){ return m.custName===r.custName && m.custItemCode===r.custItemCode; });
+            var row={ custName:r.custName, custItemCode:r.custItemCode, ourCode:r.ourCode, mgmt:r.mgmt, lastPrice:r.lastPrice, note:r.note };
+            if(exists>=0){ window.CUST_ITEM_MAP[exists]=row; updated++; }
+            else { window.CUST_ITEM_MAP.push(row); added++; }
+          });
+          if(window._GG1_save) _GG1_save('CUST_ITEM_MAP', window.CUST_ITEM_MAP);   // GG-1 연동
+          if(window._CC1_renderMap) _CC1_renderMap();
+          _GG2_closePasteModal();
+          alert('완료 — 신규 '+added+'건 / 업데이트 '+updated+'건');
+        };
         /* EE-3: 제뉴파마 SAP 발주현황 전용 파서(_IR10_*, _CC2_parseGenupharmaPo)는 삭제됨.
            거래처 원본 파일 처리는 "수주 관리 > 거래처 발주서 변환"(EE-2, _EE2_ADAPTERS)으로 이관. */
         window._CC2_goRegisterMap=function(custItemCode, custName){
@@ -3797,10 +3935,61 @@ select.form-control { cursor: pointer; }
             parse:function(rows){ return _EE2_parseGenupharmaSap(rows); } }
           /* 향후 다른 거래처: 항목 하나 push 하면 끝 */
         ];
+        /* ===== HH-1: 일반라벨 표준 발주 양식 (거래처 무관, 우리 품목코드로 직접 기재) ===== */
+        var _HH1_HEADERS=['우리품목코드','품목명(참고)','수량','납기요청일(YYYY-MM-DD)','단가(선택)','고객사내부코드(선택)','발주번호(선택)','비고(선택)'];
+        function _HH1_parseStandardOrder(rows){
+          if(!rows || rows.length<2) return { poNo:null, lines:[] };
+          var H=rows[0], idx={};
+          _HH1_HEADERS.forEach(function(k){ idx[k]=H.findIndex(function(h){ return String(h||'').trim()===k; }); });
+          if(idx['우리품목코드']<0 || idx['수량']<0) throw new Error('필수 컬럼 없음: 우리품목코드, 수량');
+          var poNo=null, lines=[];
+          for(var i=1;i<rows.length;i++){
+            var r=rows[i]; if(!r) continue;
+            var ourCode=String(r[idx['우리품목코드']]||'').trim();
+            if(!ourCode || ourCode.indexOf('(샘플)')>=0) continue;
+            var it=window.ITEM_DB && window.ITEM_DB[ourCode];
+            var po=idx['발주번호(선택)']>=0?String(r[idx['발주번호(선택)']]||'').trim():'';
+            if(!poNo && po) poNo=po;
+            lines.push({
+              ourCode: ourCode,
+              custCode: idx['고객사내부코드(선택)']>=0?String(r[idx['고객사내부코드(선택)']]||''):'',
+              name: it?it.name:(idx['품목명(참고)']>=0?String(r[idx['품목명(참고)']]||''):ourCode),
+              qty: idx['수량']>=0?(Number(String(r[idx['수량']]||'').replace(/,/g,''))||0):0,
+              price: idx['단가(선택)']>=0?(Number(String(r[idx['단가(선택)']]||'').replace(/,/g,''))||null):null,
+              due: idx['납기요청일(YYYY-MM-DD)']>=0?String(r[idx['납기요청일(YYYY-MM-DD)']]||'').slice(0,10):'',
+              mgmt: it?(it.mgmt||''):'',
+              note: idx['비고(선택)']>=0?String(r[idx['비고(선택)']]||''):'',
+              _matched: !!it
+            });
+          }
+          return { poNo:poNo, lines:lines, custName:null };
+        }
+        window._EE2_ADAPTERS.push({
+          id:'standard-order', custName:null, label:'일반라벨 표준 발주 양식', accept:['.xlsx','.xls'],
+          parse:function(rows){ return _HH1_parseStandardOrder(rows); }
+        });
+        window._HH1_downloadTemplate=function(){
+          if(typeof XLSX==='undefined'){ alert('엑셀 라이브러리를 불러오지 못했습니다.'); return; }
+          var wb=XLSX.utils.book_new();
+          var sample1=['(샘플) A-RL-PPF-210297DO-P-0001','투명 라벨 A4',5000,'2026-08-01','','','PO-20260701',''];
+          var sample2=['(샘플) A-FL-PPF-030020DX-M-0001','무지 접지 라벨',2000,'2026-08-05','','','','긴급요청'];
+          var guide=[['항목','설명'],
+            ['우리품목코드','엘앤피에서 부여한 품목코드. 모르시면 담당자에게 문의하세요.'],
+            ['품목명(참고)','우리품목코드를 못 찾을 때 보조 매칭에 사용 (선택)'],
+            ['수량','숫자만 입력 (쉼표 없이)'],
+            ['납기요청일','YYYY-MM-DD 형식 (예: 2026-08-01)'],
+            ['단가','비워두시면 기준 단가로 처리됩니다.'],
+            ['고객사내부코드','귀사에서 쓰는 품목코드 (참고용, 선택)'],
+            ['발주번호','귀사 내부 발주번호 (선택)'],
+            ['(샘플) 로 시작하는 행','예시용이므로 삭제 후 사용하세요.']];
+          XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet([_HH1_HEADERS, sample1, sample2]), '발주서');
+          XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(guide), '작성안내');
+          XLSX.writeFile(wb, '엘앤피_표준발주양식.xlsx');
+        };
         window._EE2_fillAdapterSel=function(){
           var sel=document.getElementById('ee2AdapterSel'); if(!sel) return;
           var cur=sel.value;
-          sel.innerHTML=window._EE2_ADAPTERS.map(function(a){ return '<option value="'+a.id+'">'+a.custName+' — '+a.label+'</option>'; }).join('');
+          sel.innerHTML=window._EE2_ADAPTERS.map(function(a){ return '<option value="'+a.id+'">'+(a.custName?a.custName+' — ':'')+a.label+'</option>'; }).join('');
           if(cur){ for(var i=0;i<sel.options.length;i++){ if(sel.options[i].value===cur){sel.selectedIndex=i;break;} } }
         };
         window._EE2_run=function(){
@@ -3994,6 +4183,117 @@ select.form-control { cursor: pointer; }
           });
         }
         window.ordRefreshShip=ordRefreshShip;
+        /* ===== HH-2: 수주확정 → 디자인 목록 자동 추가 + 디자인 등록 팝업 ===== */
+        window._HH2_addFromOrder=function(orderNo, custName, rows){
+          var today=new Date().toISOString().slice(0,10);
+          var addedCnt=0;
+          rows.forEach(function(tr){
+            var code=((tr.querySelector('.oi-code')||{}).value||'').trim();
+            var name=((tr.querySelector('.oi-name')||{}).value||'').trim();
+            var spec=((tr.querySelector('.oi-spec')||{}).value||'').trim();
+            var mgmt=((tr.querySelector('.oi-mgmt')||{}).value||'').trim();
+            if(!name) return;
+            var exists=(window.DESIGN_LIST||[]).some(function(d){ return d.orderNo===orderNo && d.itemCode===code; });
+            if(exists) return;
+            var it=code && window.ITEM_DB && window.ITEM_DB[code];
+            var id='DSN-'+today.replace(/-/g,'')+'-'+String((window.DESIGN_LIST||[]).length+1).padStart(3,'0');
+            window.DESIGN_LIST=window.DESIGN_LIST||[];
+            window.DESIGN_LIST.push({ id:id, orderNo:orderNo, cust:custName, itemCode:code, itemName:name, spec:spec,
+              mgmt:mgmt||(it?(it.mgmt||''):''), color:it?(it.color||''):'', status:'pending', regDate:today, designName:'', designer:'', note:'' });
+            addedCnt++;
+          });
+          if(window._HH2_renderDesignList) window._HH2_renderDesignList();
+          if(addedCnt && window.mesToast) window.mesToast({icon:'🎨', title:'디자인 목록에 자동 추가됨', desc:'수주 '+orderNo+' 품목 '+addedCnt+'건이 디자인 목록에 등록필요 상태로 추가되었습니다.'});
+        };
+        window._HH2_STATUS_LABEL={pending:'<span class="badge-status s-wait">등록필요</span>',requested:'<span class="badge-status s-run">승인요청</span>',approved:'<span class="badge-status s-done">승인완료</span>',rejected:'<span class="badge-status s-cancel">반려</span>'};
+        window._HH2_renderDesignList=function(){
+          var tb=document.getElementById('dsnListBody'); if(!tb) return;
+          Array.prototype.forEach.call(tb.querySelectorAll('tr[data-dynamic]'), function(r){ r.remove(); });
+          var list=(window.DESIGN_LIST||[]).slice().reverse();
+          var frag=document.createDocumentFragment();
+          list.forEach(function(d){
+            var tr=document.createElement('tr');
+            tr.setAttribute('data-dynamic','1'); tr.setAttribute('data-id', d.id);
+            if(d.status==='pending') tr.style.background='#FFF8E1';
+            var statusHtml=window._HH2_STATUS_LABEL[d.status]||'';
+            var btnHtml=(d.status==='pending')
+              ? '<button class="btn btn-primary" style="padding:2px 8px;font-size:11px" onclick="_HH2_openRegModal(\''+d.id+'\')">디자인 등록</button>'
+              : '<button class="btn btn-outline" style="padding:2px 8px;font-size:11px" onclick="_HH2_openRegModal(\''+d.id+'\')">상세</button>';
+            tr.innerHTML=
+              '<td style="color:#1F497D;font-weight:bold">'+d.id+'</td>'+
+              '<td>'+(d.designName||'-')+'</td>'+
+              '<td>'+d.itemName+'</td>'+
+              '<td>'+d.cust+'</td>'+
+              '<td>'+(d.spec||'-')+'</td>'+
+              '<td>v1.0</td>'+
+              '<td>'+(d.mgmt||'-')+'</td>'+
+              '<td>'+(d.color||'-')+'</td>'+
+              '<td>'+d.regDate+'</td>'+
+              '<td>'+(d.designer||'-')+'</td>'+
+              '<td>'+statusHtml+'</td>'+
+              '<td class="text-center">'+btnHtml+'</td>';
+            frag.appendChild(tr);
+          });
+          tb.insertBefore(frag, tb.firstChild);
+          // KPI: 정적 샘플(전체 24 / 승인완료 18 / 승인대기 4 / 반려 2) + 동적 DESIGN_LIST 합산
+          var BASE={total:24, approved:18, pending:4, rejected:2};
+          var approved=list.filter(function(d){return d.status==='approved';}).length;
+          var pending=list.filter(function(d){return d.status==='pending'||d.status==='requested';}).length;
+          var rejected=list.filter(function(d){return d.status==='rejected';}).length;
+          var kpiCards=document.querySelectorAll('#scr-design-list .kpi-value');
+          if(kpiCards[0]) kpiCards[0].textContent=(BASE.total+list.length)+'건';
+          if(kpiCards[1]) kpiCards[1].textContent=(BASE.approved+approved)+'건';
+          if(kpiCards[2]) kpiCards[2].textContent=(BASE.pending+pending)+'건';
+          if(kpiCards[3]) kpiCards[3].textContent=(BASE.rejected+rejected)+'건';
+        };
+        var _HH2_currentId=null;
+        window._HH2_openRegModal=function(id){
+          _HH2_currentId=id;
+          var d=(window.DESIGN_LIST||[]).filter(function(x){return x.id===id;})[0];
+          if(!d) return;
+          var mo=document.getElementById('dsnRegModal');
+          if(!mo){
+            mo=document.createElement('div'); mo.id='dsnRegModal';
+            mo.style.cssText='display:none;position:fixed;inset:0;background:rgba(0,0,0,0.45);z-index:10000;align-items:center;justify-content:center';
+            mo.innerHTML='<div style="background:#fff;border-radius:12px;width:520px;max-width:94vw;padding:20px 22px;box-shadow:0 12px 40px rgba(0,0,0,0.25)">'
+              +'<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px"><b id="dsnRegModalTitle" style="font-size:14px">디자인 등록</b>'
+              +'<button class="btn btn-outline" style="padding:2px 10px" onclick="_HH2_closeRegModal()">✕</button></div>'
+              +'<div style="background:#f8f9fa;border-radius:6px;padding:10px 14px;margin-bottom:12px;font-size:12px"><div id="dsnRegItemInfo" style="color:#444"></div></div>'
+              +'<div style="margin-bottom:10px"><label style="font-size:11px;color:#555;display:block;margin-bottom:3px">디자인명</label><input id="dsnRegName" class="form-control" style="width:100%;padding:6px 10px;font-size:12px" placeholder="예: 피엠에스메만틴정10mg 30정 라벨 v1.0"></div>'
+              +'<div style="margin-bottom:10px"><label style="font-size:11px;color:#555;display:block;margin-bottom:3px">담당 디자이너</label><input id="dsnRegDesigner" class="form-control" style="width:100%;padding:6px 10px;font-size:12px" placeholder="담당자 이름"></div>'
+              +'<div style="margin-bottom:10px"><label style="font-size:11px;color:#555;display:block;margin-bottom:3px">판재 관리번호</label><input id="dsnRegMgmt" class="form-control" style="width:100%;padding:6px 10px;font-size:12px" placeholder="자동 입력 (수정 가능)"></div>'
+              +'<div style="margin-bottom:10px"><label style="font-size:11px;color:#555;display:block;margin-bottom:3px">인쇄색도</label><input id="dsnRegColor" class="form-control" style="width:100%;padding:6px 10px;font-size:12px" placeholder="예: 4원색"></div>'
+              +'<div style="margin-bottom:10px"><label style="font-size:11px;color:#555;display:block;margin-bottom:3px">비고</label><textarea id="dsnRegNote" style="width:100%;padding:6px 10px;font-size:12px;height:50px;resize:none;border:1px solid #d5d5d5;border-radius:6px" placeholder="특이사항"></textarea></div>'
+              +'<div style="text-align:right;margin-top:12px"><button class="btn btn-outline" onclick="_HH2_closeRegModal()">취소</button> '
+              +'<button class="btn btn-outline" onclick="_HH2_saveReg(\'requested\')">승인 요청</button> '
+              +'<button class="btn btn-primary" onclick="_HH2_saveReg(\'approved\')">등록 완료</button></div></div>';
+            document.body.appendChild(mo);
+          }
+          document.getElementById('dsnRegModalTitle').textContent=(d.status==='pending')?'디자인 등록':'디자인 상세';
+          document.getElementById('dsnRegItemInfo').innerHTML='<b>수주번호</b>: '+d.orderNo+' &nbsp;|&nbsp; <b>거래처</b>: '+d.cust+' &nbsp;|&nbsp; <b>품목</b>: '+d.itemName+' / '+d.spec;
+          document.getElementById('dsnRegName').value=d.designName || (d.itemName+' v1.0');
+          document.getElementById('dsnRegDesigner').value=d.designer||'';
+          document.getElementById('dsnRegMgmt').value=d.mgmt||'';
+          document.getElementById('dsnRegColor').value=d.color||'';
+          document.getElementById('dsnRegNote').value=d.note||'';
+          mo.style.display='flex';
+        };
+        window._HH2_closeRegModal=function(){ var mo=document.getElementById('dsnRegModal'); if(mo) mo.style.display='none'; _HH2_currentId=null; };
+        window._HH2_saveReg=function(status){
+          var d=(window.DESIGN_LIST||[]).filter(function(x){return x.id===_HH2_currentId;})[0];
+          if(!d){ alert('항목을 찾을 수 없습니다.'); return; }
+          var name=(document.getElementById('dsnRegName').value||'').trim();
+          if(!name){ alert('디자인명을 입력하세요.'); return; }
+          d.status=status;
+          d.designName=name;
+          d.designer=(document.getElementById('dsnRegDesigner').value||'').trim();
+          d.mgmt=(document.getElementById('dsnRegMgmt').value||'').trim();
+          d.color=(document.getElementById('dsnRegColor').value||'').trim();
+          d.note=(document.getElementById('dsnRegNote').value||'').trim();
+          _HH2_closeRegModal();
+          if(window._HH2_renderDesignList) window._HH2_renderDesignList();
+          if(window.mesToast) window.mesToast({icon:'✅', title:'디자인 '+(status==='approved'?'등록 완료':'승인 요청'), desc:name});
+        };
         (function initOrderItems(){
           if(typeof ordFillCust==='function')ordFillCust();
           if(typeof ordRefreshMatin==='function')ordRefreshMatin();
@@ -4052,6 +4352,7 @@ select.form-control { cursor: pointer; }
               <div><label style="font-size:11px;color:#555;display:block;margin-bottom:3px">원본 파일 (.xls/.xlsx)</label>
                 <input id="ee2File" type="file" accept=".xls,.xlsx" style="font-size:12px"></div>
               <button class="btn btn-outline" style="padding:6px 12px;font-size:12px" onclick="var t=document.getElementById('ee2PasteWrap');t.style.display=(t.style.display==='none'?'':'none')">📋 텍스트 붙여넣기</button>
+              <button class="btn btn-outline" style="padding:6px 12px;font-size:12px" onclick="_HH1_downloadTemplate()">📥 일반라벨 표준 발주 양식</button>
               <button class="btn btn-primary" style="padding:7px 18px;font-size:13px;font-weight:bold" onclick="_EE2_run()">🔄 변환 실행</button>
             </div>
             <div id="ee2PasteWrap" style="display:none;padding:10px 20px;background:#FBFBFB;border-bottom:1px solid #eee">
@@ -6245,6 +6546,7 @@ select.form-control { cursor: pointer; }
             <div style="padding:12px 20px 8px;display:flex;align-items:center;gap:8px;border-bottom:1px solid #f5f5f5">
               <span style="font-size:15px;font-weight:bold;color:#222">품목 관리</span>
               <span id="itemCount" style="background:#FF6B35;color:white;font-size:11px;border-radius:10px;padding:1px 8px;font-weight:bold">12건</span>
+              <button onclick="_GG1_clearAll()" title="품목·매칭표 데이터를 모두 비우고 초기 상태로 (시연 준비용)" style="margin-left:auto;font-size:11px;color:#999;background:none;border:1px solid #ddd;padding:2px 8px;border-radius:4px;cursor:pointer">🗑 데모 데이터 초기화</button>
             </div>
             <div style="flex:1;overflow:hidden;padding:16px 20px;display:flex;flex-direction:column;min-height:0">
           <div style="display:flex;flex-direction:column;gap:8px;margin-bottom:12px">
@@ -6302,6 +6604,7 @@ select.form-control { cursor: pointer; }
               <div style="display:flex;align-items:center;gap:8px">
                 <select id="ccmCustSel" class="form-control" style="padding:6px 10px;font-size:12px;width:200px" onfocus="_CC1_fillCustSel()"><option>선택</option></select>
                 <button onclick="_CC1_openAdd()" style="background:#FF6B35;color:white;border:none;border-radius:6px;padding:6px 14px;font-size:12px;cursor:pointer;font-weight:bold">+ 신규 매칭 추가</button>
+                <button onclick="_GG2_openPasteModal()" style="background:white;border:1px solid #ddd;border-radius:6px;padding:6px 14px;font-size:12px;cursor:pointer;color:#555">📋 엑셀 붙여넣기</button>
               </div>
             </div>
             <div style="padding:12px 20px 8px;display:flex;align-items:center;gap:8px;border-bottom:1px solid #f5f5f5">
@@ -9651,7 +9954,7 @@ function selectMenu(el, screen) {
   // 스펙 업데이트
   updateSpecs(screen);
   document.getElementById('screen-label-title').textContent = '· ' + spec.name;
-  try{ if(screen==='item'&&window.itemCustColRefresh)window.itemCustColRefresh(); if((screen==='stock'||screen==='substock')&&window.matStockRender)window.matStockRender(); if(screen==='stockorder-list'&&window.poRender)window.poRender(); if(screen==='stockinlist'&&window.stockinListRender)window.stockinListRender(); if(screen==='pricemgmt'&&window.priceRender)window.priceRender(); if(screen==='somatorder'&&window.somatStockRender)window.somatStockRender(); if(screen==='cust-item-map'){ if(window._CC1_renderMap)window._CC1_renderMap(); if(window._CC1_fillCustSel)window._CC1_fillCustSel(); } if(screen==='po-converter'&&window._EE2_fillAdapterSel)window._EE2_fillAdapterSel(); }catch(e){}
+  try{ if(screen==='item'&&window.itemCustColRefresh)window.itemCustColRefresh(); if((screen==='stock'||screen==='substock')&&window.matStockRender)window.matStockRender(); if(screen==='stockorder-list'&&window.poRender)window.poRender(); if(screen==='stockinlist'&&window.stockinListRender)window.stockinListRender(); if(screen==='pricemgmt'&&window.priceRender)window.priceRender(); if(screen==='somatorder'&&window.somatStockRender)window.somatStockRender(); if(screen==='cust-item-map'){ if(window._CC1_renderMap)window._CC1_renderMap(); if(window._CC1_fillCustSel)window._CC1_fillCustSel(); } if(screen==='po-converter'&&window._EE2_fillAdapterSel)window._EE2_fillAdapterSel(); if(screen==='design-list'&&window._HH2_renderDesignList)window._HH2_renderDesignList(); }catch(e){}
 }
 
 function updateSpecs(screen) {
@@ -10396,6 +10699,7 @@ updateSpecs('dashboard');
     }
     while(ITEM_DB[code]){ code=code.replace(/(\d+)(?!.*\d)/,function(m){return String(+m+1).padStart(m.length,'0');}); }
     ITEM_DB[code]=data;
+    if(window._GG1_save) _GG1_save('ITEM_DB', ITEM_DB);   // GG-1: 새로고침 유지
     if(window.iregInitHist) window.iregInitHist(code,{dt:_nowStr(),v:'v1.0',who:'홍민기',field:'-',desc:'신규 품목 등록',rsn:'최초 생성'});
     // CC-1: 고객사코드가 있는 SOP 라벨 완제품은 거래처-품목 매칭표에 자동 반영
     if(data.custCode && data.type==='완제품' && data.cat1==='SOP 라벨'){
@@ -10403,6 +10707,7 @@ updateSpecs('dashboard');
       var _mi = window.CUST_ITEM_MAP.findIndex(function(m){ return m.custItemCode===data.custCode && m.custName===(data.cust||''); });
       var _row = {custName:data.cust||'', custItemCode:data.custCode, ourCode:code, mgmt:data.mgmt||'', lastPrice:nParse(data.sell)||'', note:''};
       if(_mi>=0) window.CUST_ITEM_MAP[_mi]=_row; else window.CUST_ITEM_MAP.push(_row);
+      if(window._GG1_save) _GG1_save('CUST_ITEM_MAP', window.CUST_ITEM_MAP);   // GG-1
       if(window._CC1_renderMap) window._CC1_renderMap();
     }
     if(!tb) return code;
@@ -11198,6 +11503,8 @@ function bulkImport(){
   });
 
   if(window.applyItemFilters) window.applyItemFilters();
+  // GG-1: 일괄등록 결과를 IndexedDB에 저장 (품목 + 고객사코드로 반영된 매칭표)
+  if(added>0 && window._GG1_save){ _GG1_save('ITEM_DB', window.ITEM_DB); _GG1_save('CUST_ITEM_MAP', window.CUST_ITEM_MAP||[]); }
 
   var box=document.getElementById("bulkResult");
   if(seen===0 && errs.length===0){ showErrPop("등록할 데이터 없음",["시트에 (샘플 행을 제외한) 입력 데이터가 없습니다.","양식의 완제품·원자재·부자재 시트에 품목을 입력한 뒤 다시 시도하세요."]); return; }
@@ -11761,6 +12068,7 @@ var PLIST={"bomrouting": {"t": "Routing 생성", "cols": ["제품", "순서", "�
     }); window.SO_ORDERS.unshift({no:no,cust:cust.value,due:ddate,urgent:urgent,status:"접수",totAmt:_totAmt,items:_its,custPo:custPo}); if(window.somatRenderOrders)window.somatRenderOrders(); if(window.ordRefreshMatin)window.ordRefreshMatin(); if(window.ordRefreshShip)window.ordRefreshShip(); }catch(e){}
     if(!silent) showToast("✅ "+no+" 수주 저장 완료 · 생산계획 전환 ("+cust.value+" / "+totQty.toLocaleString()+"개)");
     if(!silent){ try{ if(window.woAddFromOrder) window.woAddFromOrder(no, cust.value, rows, ddate); if(window.mesAddNotif) window.mesAddNotif({type:'info',icon:'🛒',title:'자재 구매 필요 (수주 기반)',desc:'수주 '+no+' 생산에 필요한 자재를 발주하세요. [자재 발주(수주)]에서 소요 산출 후 발주할 수 있습니다.',action:function(){ if(window.gotoScreen)gotoScreen('somatorder'); },actionLabel:'자재 발주(수주)'}); }catch(e){} }
+    try{ if(window._HH2_addFromOrder) window._HH2_addFromOrder(no, cust.value, rows); }catch(e){}
     return true;
   };
   window.orderToPlan=function(){ if(window.orderSave(true)) showToast("📋 생산계획으로 전환되었습니다"); };
