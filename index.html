@@ -6463,11 +6463,6 @@ select.form-control { cursor: pointer; }
             </div>
           </div>
         </div>
-
-        <!-- 자재 주문서 모달 (발주처·납기일 수정 가능) -->
-        <div id="bmDocOv" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:9999;align-items:center;justify-content:center" onclick="if(event.target===this)bmDocClose()">
-          <div id="bmDocBox" style="width:640px;max-width:94%;max-height:92vh;overflow:auto;background:#fff;border-radius:10px;box-shadow:0 10px 40px rgba(0,0,0,0.3)"></div>
-        </div>
       </div><!-- /scr-submatorder -->
       <script>
       (function(){
@@ -6522,7 +6517,7 @@ select.form-control { cursor: pointer; }
             var badge=p.status==='입고완료'?'<span class="badge-status s-done">입고완료</span>':'<span class="badge-status s-run">발주중</span>';
             var act=p.status==='입고완료' ? '<button class="btn btn-outline" style="padding:2px 8px;font-size:11px" onclick="bmPoDoc('+i+')">📄 주문서</button>'
               : '<button class="btn btn-primary" style="padding:2px 8px;font-size:11px" onclick="bmOpenRecv('+i+')">📥 입고</button> <button class="btn btn-outline" style="padding:2px 8px;font-size:11px" onclick="bmPoDoc('+i+')">📄</button>';
-            return '<tr><td style="color:#1F497D;font-weight:bold">'+p.no+'</td><td>'+p.date+'</td><td>'+p.vendor+'</td><td>'+(it0.name||'-')+more+'</td><td class="text-right">'+(p.items?p.items.length:0)+'</td><td>'+p.due+'</td><td class="text-right" style="font-weight:bold">'+_f(p.amount)+'</td><td>'+badge+'</td><td class="text-center" style="white-space:nowrap">'+act+'</td></tr>';
+            return '<tr><td style="color:#1F497D;font-weight:bold;cursor:pointer;text-decoration:underline" onclick="bmPoDoc('+i+')" title="발주서 보기">'+p.no+'</td><td>'+p.date+'</td><td>'+p.vendor+'</td><td'+(it0.code?' style="cursor:pointer;text-decoration:underline" onclick="bmItemInfo(\''+it0.code+'\')" title="기준정보 보기"':'')+'>'+(it0.name||'-')+more+'</td><td class="text-right">'+(p.items?p.items.length:0)+'</td><td>'+p.due+'</td><td class="text-right" style="font-weight:bold">'+_f(p.amount)+'</td><td>'+badge+'</td><td class="text-center" style="white-space:nowrap">'+act+'</td></tr>';
           }).join('');
           var cc=document.getElementById('bmCount'); if(cc)cc.textContent=list.length+'건';
           var e=document.getElementById('bmEmpty'); if(e)e.style.display=list.length?'none':'block';
@@ -6657,7 +6652,7 @@ select.form-control { cursor: pointer; }
           <div style="display:flex;flex-direction:column;background:white">
             <div style="padding:14px 20px;border-bottom:1px solid #efefef;display:flex;align-items:center;justify-content:space-between">
               <input style="width:220px;border:1px solid #ddd;border-radius:6px;padding:6px 12px;font-size:12px" placeholder="🔍 검색">
-              <button style="background:white;border:1px solid #ddd;border-radius:6px;padding:6px 14px;font-size:12px;cursor:pointer;color:#555">📥 Excel</button>
+              <button onclick="smcExportExcel()" style="background:white;border:1px solid #ddd;border-radius:6px;padding:6px 14px;font-size:12px;cursor:pointer;color:#555">📥 Excel</button>
             </div>
             <div style="padding:12px 20px 8px;display:flex;align-items:center;gap:8px;border-bottom:1px solid #f5f5f5">
               <span style="font-size:15px;font-weight:bold;color:#222">부자재 마감 처리</span>
@@ -6712,6 +6707,24 @@ select.form-control { cursor: pointer; }
           window.SUBMAT_CLOSE.splice(i,1); if(window.bmPersist)bmPersist(); smcRender();
         };
         function smcPrevMonth(m){ var p=m.split('-'); var y=+p[0], mo=+p[1]-1; if(mo<1){mo=12;y--;} return y+'-'+('0'+mo).slice(-2); }
+        function smcFilteredList(mv,ev,onlyOpen){ return (window.SUBMAT_IN||[]).filter(function(r){ return (!mv||smcYm(r)===mv)&&(!ev||(r.exp||'제조경비')===ev)&&(!onlyOpen||r.st!=='ok'); }); }
+        window.smcExportExcel=function(){
+          if(typeof XLSX==='undefined'){ alert('엑셀 라이브러리를 불러오지 못했습니다. 인터넷 연결을 확인한 뒤 다시 시도하세요.'); return; }
+          var ms=document.getElementById('smcMonth'), es=document.getElementById('smcExp'), os=document.getElementById('smcOnlyOpen');
+          var mv=ms?ms.value:'', ev=es?es.value:'', onlyOpen=os&&os.checked;
+          var list=smcFilteredList(mv,ev,onlyOpen);
+          if(!list.length){ alert('내보낼 마감 자료가 없습니다.'); return; }
+          var aoa=[['입고번호','입고일','자재코드','자재명','공급업체','단위','입고수량','입고금액','Lot번호','수입검사','창고','경비구분','마감상태']];
+          list.forEach(function(r){
+            var st=(window.SUBMAT_CLOSE||[]).indexOf(smcYm(r))>=0?'월마감':(r.st==='ok'?'확정':'미확정');
+            aoa.push([r.no,'2026-'+String(r.date||'').replace('/','-'),r.code||'',r.name||'',r.vendor||'',r.unit||'',r.qty||0,r.amt||0,r.lot||'',r.qc||'',r.wh||'',r.exp||'제조경비',st]);
+          });
+          var wb=XLSX.utils.book_new();
+          XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(aoa), '마감자료');
+          var d=new Date(); function p(n){return String(n).padStart(2,'0');}
+          var fn='부자재마감_'+(mv||'전체')+'_'+d.getFullYear()+p(d.getMonth()+1)+p(d.getDate())+'.xlsx';
+          XLSX.writeFile(wb, fn);
+        };
         window.smcRender=function(){
           var tb=document.getElementById('smcBody'); if(!tb)return; var all=window.SUBMAT_IN||[];
           var ms=document.getElementById('smcMonth'), es=document.getElementById('smcExp'), os=document.getElementById('smcOnlyOpen');
@@ -6725,7 +6738,7 @@ select.form-control { cursor: pointer; }
             : (window.SUBMAT_CLOSE.indexOf(mv)>=0
               ? '<button class="btn btn-outline" style="padding:5px 12px;font-size:12px" onclick="smcMonthOpen()">🔓 마감 해제</button>'
               : '<button style="background:#1B2B4B;color:#fff;border:none;border-radius:6px;padding:6px 12px;font-size:12px;cursor:pointer;font-weight:bold" onclick="smcMonthClose()">🔒 월마감</button>'); }
-          var list=all.filter(function(r){ return (!mv||smcYm(r)===mv)&&(!ev||(r.exp||'제조경비')===ev)&&(!onlyOpen||r.st!=='ok'); });
+          var list=smcFilteredList(mv,ev,onlyOpen);
           var tot=0,mf=0,ge=0; list.forEach(function(r){ var a=r.amt||0; tot+=a; if((r.exp||'제조경비')==='일반경비')ge+=a; else mf+=a; });
           var sm=document.getElementById('smcSummary');
           if(sm){ function tile(l,v,c){ return '<div style="background:#f7f9fc;border:1px solid #e2e7ef;border-radius:6px;padding:4px 12px;font-size:11px;color:#666">'+l+' <b style="font-size:13px;color:'+(c||'#1B2B4B')+'">'+v+'</b></div>'; }
@@ -6741,7 +6754,7 @@ select.form-control { cursor: pointer; }
             if(r.st==='ok') return '<span class="badge-status s-pass">확정</span> <button class="btn btn-outline" style="padding:1px 7px;font-size:11px" onclick="smcConfirm(\''+r.no+'\',false)">취소</button>';
             return '<span class="badge-status s-wait">미확정</span> <button class="btn btn-outline" style="padding:1px 7px;font-size:11px" onclick="smcConfirm(\''+r.no+'\',true)">확정</button>';
           }
-          tb.innerHTML=list.map(function(r){ return '<tr><td style="color:#1F497D;font-weight:bold">'+r.no+'</td><td>'+r.date+'</td><td style="font-family:monospace;font-size:11px">'+(r.code||'-')+'</td><td>'+(r.name||'-')+'</td><td>'+(r.vendor||'-')+'</td><td class="text-center">'+(r.unit||'-')+'</td><td class="text-right">'+_fq(r.qty)+'</td><td class="text-right" style="font-weight:bold">'+_f(r.amt)+'</td><td style="font-family:monospace;font-size:11px">'+(r.lot||'-')+'</td><td class="text-center">'+qcb(r.qc)+'</td><td>'+(r.wh||'-')+'</td><td class="text-center">'+(r.exp||'제조경비')+'</td><td class="text-center" style="white-space:nowrap">'+stc(r)+'</td></tr>'; }).join('');
+          tb.innerHTML=list.map(function(r){ return '<tr><td style="color:#1F497D;font-weight:bold;cursor:pointer;text-decoration:underline" onclick="smcInDetail(\''+r.no+'\')" title="입고 상세 보기">'+r.no+'</td><td>'+r.date+'</td><td style="font-family:monospace;font-size:11px">'+(r.code||'-')+'</td><td'+(r.code?' style="cursor:pointer;text-decoration:underline" onclick="bmItemInfo(\''+r.code+'\')" title="기준정보 보기"':'')+'>'+(r.name||'-')+'</td><td>'+(r.vendor||'-')+'</td><td class="text-center">'+(r.unit||'-')+'</td><td class="text-right">'+_fq(r.qty)+'</td><td class="text-right" style="font-weight:bold">'+_f(r.amt)+'</td><td style="font-family:monospace;font-size:11px">'+(r.lot||'-')+'</td><td class="text-center">'+qcb(r.qc)+'</td><td>'+(r.wh||'-')+'</td><td class="text-center">'+(r.exp||'제조경비')+'</td><td class="text-center" style="white-space:nowrap">'+stc(r)+'</td></tr>'; }).join('');
           var c=document.getElementById('smcCount'); if(c)c.textContent=list.length+'건';
           var e=document.getElementById('smcEmpty'); if(e)e.style.display=list.length?'none':'block';
         };
@@ -6751,6 +6764,83 @@ select.form-control { cursor: pointer; }
           _GG1_load('SUBMAT_CLOSE', function(s){ if(s&&s.length){ window.SUBMAT_CLOSE=s; if(window.smcRender)smcRender(); } });
         },500); });
         setTimeout(function(){ if(window.smcRender)smcRender(); },0);
+      })();
+      </script>
+
+      <!-- ===== 부자재 관리 공용 팝업 (부자재 발주 / 마감 처리 두 화면에서 공유 — .screen 밖 최상위에 둬야 어느 화면에서든 뜸) ===== -->
+      <div id="bmDocOv" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:9999;align-items:center;justify-content:center" onclick="if(event.target===this)bmDocClose()">
+        <div id="bmDocBox" style="width:640px;max-width:94%;max-height:92vh;overflow:auto;background:#fff;border-radius:10px;box-shadow:0 10px 40px rgba(0,0,0,0.3)"></div>
+      </div>
+      <div id="bmItemInfoOv" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:9999;align-items:center;justify-content:center" onclick="if(event.target===this)bmItemInfoClose()">
+        <div id="bmItemInfoBox" style="width:420px;max-width:92%;max-height:92vh;overflow:auto;background:#fff;border-radius:10px;box-shadow:0 10px 40px rgba(0,0,0,0.3)"></div>
+      </div>
+      <div id="smcDetailOv" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:9999;align-items:center;justify-content:center" onclick="if(event.target===this)smcDetailClose()">
+        <div id="smcDetailBox" style="width:600px;max-width:94%;max-height:92vh;overflow:auto;background:#fff;border-radius:10px;box-shadow:0 10px 40px rgba(0,0,0,0.3)"></div>
+      </div>
+      <script>
+      (function(){
+        function _f(n){ return (Math.round(n)||0).toLocaleString('ko-KR'); }
+        function _fq(n){ return (Number(n)||0).toLocaleString('ko-KR',{maximumFractionDigits:2}); }
+        // 자재명 클릭 → 품목등록(ITEM_DB)에 저장된 기준정보 팝업 (부자재 발주 검색 호버 미리보기와 동일한 내용을 클릭형 모달로 제공)
+        window.bmItemInfo=function(code){
+          var box=document.getElementById('bmItemInfoBox'); if(!box)return;
+          var d=(window.ITEM_DB||{})[code]||{};
+          function row(l,v){ return v?('<tr><td style="color:#888;padding:4px 10px 4px 0;white-space:nowrap;vertical-align:top">'+l+'</td><td style="font-weight:600">'+v+'</td></tr>'):''; }
+          box.innerHTML='<div style="padding:16px 20px;border-bottom:1px solid #eee;display:flex;justify-content:space-between;align-items:center"><span style="font-size:15px;font-weight:bold;color:#222">📦 기준정보</span><span style="cursor:pointer;color:#999;font-size:18px" onclick="bmItemInfoClose()">✕</span></div>'
+            +'<div style="padding:18px 20px">'
+            +'<div style="font-weight:800;color:#1B2B4B;font-size:14px;margin-bottom:2px">'+(d.name||code)+'</div>'
+            +'<div style="font-family:monospace;color:#999;font-size:11px;margin-bottom:10px">'+code+'</div>'
+            +'<table style="border-collapse:collapse;font-size:12.5px;width:100%">'
+            + row('유형', d.type||'-')
+            + row('세부유형', d.subcat||d.rcat||'-')
+            + row('공급처', d.cust||'-')
+            + row('단위', d.unit||'-')
+            + row('매입단가', d.std?(d.std+'원'):'-')
+            + row('판매단가', d.sell?(d.sell+'원'):'')
+            + row('안전재고', d.safe||'')
+            + row('발주점(위험재고)', d.risk||'')
+            +'</table>'
+            + (Object.keys(d).length?'':'<div style="margin-top:10px;color:#bbb;font-size:11px">품목등록에 등록된 기준정보가 없습니다.</div>')
+            +'<div style="text-align:right;margin-top:16px"><button class="btn btn-secondary" onclick="bmItemInfoClose()">닫기</button></div>'
+            +'</div>';
+          document.getElementById('bmItemInfoOv').style.display='flex';
+        };
+        window.bmItemInfoClose=function(){ document.getElementById('bmItemInfoOv').style.display='none'; };
+
+        // 입고번호 클릭 → 입고 상세 + 연결된 부자재 발주 정보
+        function qcb2(q){ return q==='합격'?'<span class="badge-status s-pass">합격</span>':(q==='불합격'?'<span class="badge-status s-fail">불합격</span>':(q==='조건부합격'?'<span class="badge-status s-run">조건부</span>':'<span class="badge-status s-wait">미검사</span>')); }
+        function row2(l,v){ return '<tr><td style="background:#f7f9fc;font-weight:600;width:110px">'+l+'</td><td>'+v+'</td></tr>'; }
+        window.smcInDetail=function(no){
+          var r=(window.SUBMAT_IN||[]).filter(function(x){return x.no===no;})[0]; if(!r)return;
+          var po=(window.SUBMAT_PO||[]).filter(function(p){return p.no===r.poNo;})[0];
+          var inTbl='<table style="width:100%;border-collapse:collapse;font-size:12px">'
+            +row2('입고번호',r.no)+row2('입고일','2026-'+String(r.date||'').replace('/','-'))
+            +row2('자재','<b>'+(r.name||'-')+'</b> <span style="color:#888;font-family:monospace">'+(r.code||'')+'</span>')
+            +row2('공급업체',r.vendor||'-')+row2('단위',r.unit||'-')
+            +row2('입고수량','<b>'+_fq(r.qty)+'</b> '+(r.unit||''))+row2('입고금액','<b>'+_f(r.amt)+'</b> 원')
+            +row2('Lot 번호','<span style="font-family:monospace">'+(r.lot||'-')+'</span>')
+            +row2('수입검사',qcb2(r.qc))+row2('창고',r.wh||'-')+row2('경비구분',r.exp||'제조경비')+'</table>';
+          var poHtml;
+          if(po){
+            var idx=(window.SUBMAT_PO||[]).indexOf(po);
+            var prows=(po.items||[]).map(function(it,i){ return '<tr><td class="c">'+(i+1)+'</td><td>'+it.name+'</td><td class="c">'+it.unit+'</td><td class="r">'+_fq(it.qty)+'</td><td class="r">'+_f(it.price)+'</td><td class="r">'+_f(it.amt)+'</td></tr>'; }).join('');
+            poHtml='<div style="margin-top:6px;font-size:12.5px;color:#444">발주번호 <b style="color:#1F497D">'+po.no+'</b> · 발주처 '+(po.issuer||'-')+' · 매입처 '+po.vendor+' · 발주일 2026-'+po.date+' · 납기 2026-'+po.due+'</div>'
+              +'<table style="width:100%;border-collapse:collapse;font-size:12px;margin-top:8px"><thead><tr><th class="c" style="width:30px">No</th><th>자재명</th><th class="c" style="width:50px">단위</th><th class="r">수량</th><th class="r">단가</th><th class="r">금액</th></tr></thead><tbody>'+prows+'</tbody></table>'
+              +'<div style="text-align:right;margin-top:8px"><button class="btn btn-outline" style="padding:4px 12px;font-size:12px" onclick="smcDetailClose();bmPoDoc('+idx+');">📄 발주 주문서 보기</button></div>';
+          } else {
+            poHtml='<div style="padding:12px;background:#f7f9fc;border-radius:8px;color:#888;font-size:12.5px">연결된 부자재 발주가 없습니다. (직접 등록 건)</div>';
+          }
+          var box=document.getElementById('smcDetailBox');
+          box.innerHTML='<style>#smcDetailBox .r{text-align:right}#smcDetailBox .c{text-align:center}#smcDetailBox th,#smcDetailBox td{border:1px solid #e2e7ef;padding:5px 8px}#smcDetailBox th{background:#f3f6fb}</style>'
+            +'<div style="padding:20px 24px">'
+            +'<div style="display:flex;justify-content:space-between;align-items:center;border-bottom:2px solid #1B2B4B;padding-bottom:8px;margin-bottom:12px"><div style="font-size:17px;font-weight:800;color:#1B2B4B">🔍 입고 상세</div><div style="font-size:11px;color:#888">입고번호 '+r.no+'</div></div>'
+            +'<div style="font-weight:700;color:#1B2B4B;margin-bottom:6px">📥 입고 정보</div>'+inTbl
+            +'<div style="font-weight:700;color:#1B2B4B;margin:16px 0 6px">🧾 연결 부자재 발주 정보</div>'+poHtml
+            +'<div style="display:flex;justify-content:flex-end;gap:8px;margin-top:18px"><button class="btn btn-secondary" onclick="smcDetailClose()">닫기</button></div>'
+            +'</div>';
+          document.getElementById('smcDetailOv').style.display='flex';
+        };
+        window.smcDetailClose=function(){ document.getElementById('smcDetailOv').style.display='none'; };
       })();
       </script>
 
