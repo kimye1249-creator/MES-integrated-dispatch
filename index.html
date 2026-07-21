@@ -6681,7 +6681,10 @@ select.form-control { cursor: pointer; }
         function _fq(n){ return (Number(n)||0).toLocaleString('ko-KR',{maximumFractionDigits:2}); } // 수량은 kg 등 소수점 단위가 있어 반올림하지 않음
         function smcYm(r){ return '2026-'+String(r.date||'').slice(0,2); } // ponytail: 연도 2026 고정(데모 데이터 관행), 실서비스 시 date에 연도 포함 필요
         window.SUBMAT_CLOSE=window.SUBMAT_CLOSE||[];
+        var _smcConfirmBusy=false; // 확정/취소 버튼이 같은 자리에서 라벨만 바뀌므로, 연속 클릭(더블클릭)이 방금 렌더된 반대 버튼을 눌러 되돌리는 것을 방지
         window.smcConfirm=function(no,on){
+          if(_smcConfirmBusy) return;
+          _smcConfirmBusy=true; setTimeout(function(){ _smcConfirmBusy=false; },350);
           var r=(window.SUBMAT_IN||[]).filter(function(x){return x.no===no;})[0]; if(!r)return;
           if(window.SUBMAT_CLOSE.indexOf(smcYm(r))>=0){ alert('월마감된 건은 변경할 수 없습니다. 먼저 마감을 해제하세요.'); return; }
           r.st=on?'ok':''; if(window.bmPersist)bmPersist(); smcRender();
