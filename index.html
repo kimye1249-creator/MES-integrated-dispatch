@@ -6485,7 +6485,15 @@ select.form-control { cursor: pointer; }
         window.SUBMAT_CLOSE = window.SUBMAT_CLOSE||[];
         window.bmPersist=function(){ if(window._GG1_save){ _GG1_save('SUBMAT_PO', window.SUBMAT_PO||[]); _GG1_save('SUBMAT_IN', window.SUBMAT_IN||[]); _GG1_save('SUBMAT_CLOSE', window.SUBMAT_CLOSE||[]); } };
 
-        function bmMatMaster(){ var out=[], CI=window.CI_MASTER||{}; Object.keys(CI).forEach(function(v){ (CI[v]||[]).forEach(function(it){ if(it.type!=='부자재')return; out.push({code:it.code,name:it.name,cat:(it.big1||'')+(it.big2&&it.big2!=='-'?'·'+it.big2:''),supplier:v,unit:(it.unit||'EA'),price:_n(it.price)}); }); }); return out; }
+        function bmMatMaster(){
+          var out=[], seen={};
+          var CI=window.CI_MASTER||{};
+          Object.keys(CI).forEach(function(v){ (CI[v]||[]).forEach(function(it){ if(it.type!=='부자재'||seen[it.code])return; seen[it.code]=1; out.push({code:it.code,name:it.name,cat:(it.big1||'')+(it.big2&&it.big2!=='-'?'·'+it.big2:''),supplier:v,unit:(it.unit||'EA'),price:_n(it.price)}); }); });
+          // 품목관리 > 품목등록에서 새로 등록한 부자재(CI_MASTER 시드에는 없음)도 검색되도록 ITEM_DB를 함께 조회
+          var ID=window.ITEM_DB||{};
+          Object.keys(ID).forEach(function(code){ var it=ID[code]; if(!it||it.type!=='부자재'||seen[code])return; seen[code]=1; out.push({code:code,name:it.name||code,cat:it.subcat||'-',supplier:it.cust||'-',unit:it.unit||'EA',price:_n(it.std||it.sell||0)}); });
+          return out;
+        }
 
         function bmCounts(){ var po=window.SUBMAT_PO||[]; return {all:po.length, run:po.filter(function(p){return p.status==='발주중';}).length, done:po.filter(function(p){return p.status==='입고완료';}).length}; }
         window.bmFilter='all';
