@@ -6689,6 +6689,15 @@ select.form-control { cursor: pointer; }
           if(window.SUBMAT_CLOSE.indexOf(smcYm(r))>=0){ alert('월마감된 건은 변경할 수 없습니다. 먼저 마감을 해제하세요.'); return; }
           r.st=on?'ok':''; if(window.bmPersist)bmPersist(); smcRender();
         };
+        window.smcDelete=function(no){
+          var list=window.SUBMAT_IN||[]; var idx=list.map(function(x){return x.no;}).indexOf(no); if(idx<0)return;
+          var r=list[idx];
+          if(window.SUBMAT_CLOSE.indexOf(smcYm(r))>=0){ alert('월마감된 건은 삭제할 수 없습니다. 먼저 마감을 해제하세요.'); return; }
+          if(!confirm(r.no+' 입고 내역을 삭제할까요?\n'+(r.poNo?'연결된 발주('+r.poNo+')는 다시 "발주중" 상태로 되돌아갑니다.':'')+'\n이 작업은 되돌릴 수 없습니다.')) return;
+          list.splice(idx,1);
+          if(r.poNo){ var po=(window.SUBMAT_PO||[]).filter(function(p){return p.no===r.poNo;})[0]; if(po) po.status='발주중'; }
+          if(window.bmPersist)bmPersist(); smcRender(); if(window.bmRender)bmRender();
+        };
         function smcOpenPosInMonth(m){ return (window.SUBMAT_PO||[]).filter(function(p){ return p.status!=='입고완료' && ('2026-'+String(p.due||'').slice(0,2))===m; }); }
         window.smcMonthClose=function(){
           var ms=document.getElementById('smcMonth'); var m=ms?ms.value:''; if(!m){ alert('마감할 월을 선택하세요.'); return; }
@@ -6757,8 +6766,9 @@ select.form-control { cursor: pointer; }
           function qcb(q){ return q==='합격'?'<span class="badge-status s-pass">합격</span>':(q==='불합격'?'<span class="badge-status s-fail">불합격</span>':(q==='조건부합격'?'<span class="badge-status s-run">조건부</span>':'<span class="badge-status s-wait">미검사</span>')); }
           function stc(r){
             if(window.SUBMAT_CLOSE.indexOf(smcYm(r))>=0) return '<span class="badge-status s-done">🔒 월마감</span>';
-            if(r.st==='ok') return '<span class="badge-status s-pass">확정</span> <button class="btn btn-outline" style="padding:1px 7px;font-size:11px" onclick="smcConfirm(\''+r.no+'\',false)">취소</button>';
-            return '<span class="badge-status s-wait">미확정</span> <button class="btn btn-outline" style="padding:1px 7px;font-size:11px" onclick="smcConfirm(\''+r.no+'\',true)">확정</button>';
+            var del=' <button class="btn btn-outline" style="padding:1px 6px;font-size:11px;color:#C00" onclick="smcDelete(\''+r.no+'\')" title="입고 내역 삭제">🗑</button>';
+            if(r.st==='ok') return '<span class="badge-status s-pass">확정</span> <button class="btn btn-outline" style="padding:1px 7px;font-size:11px" onclick="smcConfirm(\''+r.no+'\',false)">취소</button>'+del;
+            return '<span class="badge-status s-wait">미확정</span> <button class="btn btn-outline" style="padding:1px 7px;font-size:11px" onclick="smcConfirm(\''+r.no+'\',true)">확정</button>'+del;
           }
           tb.innerHTML=list.map(function(r){ return '<tr><td style="color:#1F497D;font-weight:bold;cursor:pointer;text-decoration:underline" onclick="smcInDetail(\''+r.no+'\')" title="입고 상세 보기">'+r.no+'</td><td>'+r.date+'</td><td style="font-family:monospace;font-size:11px">'+(r.code||'-')+'</td><td'+(r.code?' style="cursor:pointer;text-decoration:underline" onclick="bmItemInfo(\''+r.code+'\')" title="기준정보 보기"':'')+'>'+(r.name||'-')+'</td><td>'+(r.vendor||'-')+'</td><td class="text-center">'+(r.unit||'-')+'</td><td class="text-right">'+_fq(r.qty)+'</td><td class="text-right" style="font-weight:bold">'+_f(r.amt)+'</td><td style="font-family:monospace;font-size:11px">'+(r.lot||'-')+'</td><td class="text-center">'+qcb(r.qc)+'</td><td>'+(r.wh||'-')+'</td><td class="text-center">'+(r.exp||'제조경비')+'</td><td class="text-center" style="white-space:nowrap">'+stc(r)+'</td></tr>'; }).join('');
           var c=document.getElementById('smcCount'); if(c)c.textContent=list.length+'건';
