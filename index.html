@@ -6714,13 +6714,17 @@ select.form-control { cursor: pointer; }
           var mv=ms?ms.value:'', ev=es?es.value:'', onlyOpen=os&&os.checked;
           var list=smcFilteredList(mv,ev,onlyOpen);
           if(!list.length){ alert('내보낼 마감 자료가 없습니다.'); return; }
-          var aoa=[['입고번호','입고일','자재코드','자재명','공급업체','단위','입고수량','입고금액','Lot번호','수입검사','창고','경비구분','마감상태']];
+          var titleLabel=mv?(mv.slice(0,4)+'년'+mv.slice(5,7)+'월 마감'):'전체 기간 마감';
+          if(ev) titleLabel+=' ('+ev+')';
+          var aoa=[[titleLabel],['입고번호','입고일','자재코드','자재명','공급업체','단위','입고수량','입고금액','Lot번호','수입검사','창고','경비구분','마감상태']];
           list.forEach(function(r){
             var st=(window.SUBMAT_CLOSE||[]).indexOf(smcYm(r))>=0?'월마감':(r.st==='ok'?'확정':'미확정');
             aoa.push([r.no,'2026-'+String(r.date||'').replace('/','-'),r.code||'',r.name||'',r.vendor||'',r.unit||'',r.qty||0,r.amt||0,r.lot||'',r.qc||'',r.wh||'',r.exp||'제조경비',st]);
           });
+          var ws=XLSX.utils.aoa_to_sheet(aoa);
+          ws['!merges']=[{s:{r:0,c:0},e:{r:0,c:12}}];
           var wb=XLSX.utils.book_new();
-          XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(aoa), '마감자료');
+          XLSX.utils.book_append_sheet(wb, ws, '마감자료');
           var d=new Date(); function p(n){return String(n).padStart(2,'0');}
           var fn='부자재마감_'+(mv||'전체')+'_'+d.getFullYear()+p(d.getMonth()+1)+p(d.getDate())+'.xlsx';
           XLSX.writeFile(wb, fn);
