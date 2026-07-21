@@ -6411,8 +6411,9 @@ select.form-control { cursor: pointer; }
           </div>
         </div>
 
-        <!-- 발주 등록 모달 -->
-        <div id="bmRegOv" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:10005;align-items:center;justify-content:center" onclick="if(event.target===this)bmCloseReg()">
+        <!-- 발주 등록 모달 (z-index는 errPop(10002)보다 낮게 — 검증 경고가 항상 위에 보이도록) -->
+        <div id="bmMatPreview" style="display:none;position:fixed;width:260px;background:#fff;border:1px solid #d5d5d5;border-radius:8px;box-shadow:0 8px 24px rgba(0,0,0,0.18);z-index:10011"></div>
+        <div id="bmRegOv" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:9997;align-items:center;justify-content:center" onclick="if(event.target===this)bmCloseReg()">
           <div style="width:720px;max-width:94%;max-height:92vh;overflow:auto;background:#fff;border-radius:10px;box-shadow:0 10px 40px rgba(0,0,0,0.3)">
             <div style="padding:16px 22px;border-bottom:1px solid #eee;display:flex;justify-content:space-between;align-items:center">
               <span style="font-size:15px;font-weight:bold;color:#222">📋 부자재 발주 등록</span>
@@ -6439,8 +6440,8 @@ select.form-control { cursor: pointer; }
           </div>
         </div>
 
-        <!-- 입고 처리 모달 -->
-        <div id="bmRecvOv" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:10006;align-items:center;justify-content:center" onclick="if(event.target===this)bmCloseRecv()">
+        <!-- 입고 처리 모달 (z-index는 errPop(10002)보다 낮게 — 검증 경고가 항상 위에 보이도록) -->
+        <div id="bmRecvOv" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:9998;align-items:center;justify-content:center" onclick="if(event.target===this)bmCloseRecv()">
           <div style="width:420px;max-width:92%;background:#fff;border-radius:10px;box-shadow:0 10px 40px rgba(0,0,0,0.3)">
             <div style="padding:16px 22px;border-bottom:1px solid #eee;display:flex;justify-content:space-between;align-items:center">
               <span style="font-size:15px;font-weight:bold;color:#222">📥 부자재 입고 처리</span>
@@ -6513,7 +6514,7 @@ select.form-control { cursor: pointer; }
 
         // ===== 발주 등록 모달 =====
         window.bmOpenReg=function(){ document.getElementById('bmItemBody').innerHTML='<tr class="bm-sum"><td colspan="6"></td><td class="text-right" style="font-weight:bold" id="bmSumCell">합계: 0</td><td></td></tr>'; bmAddRow(); document.getElementById('bmRegOv').style.display='flex'; };
-        window.bmCloseReg=function(){ document.getElementById('bmRegOv').style.display='none'; };
+        window.bmCloseReg=function(){ document.getElementById('bmRegOv').style.display='none'; if(window.bmMatPreviewHide)bmMatPreviewHide(); };
         function bmRows(){ return Array.prototype.slice.call(document.querySelectorAll('#bmItemBody tr')).filter(function(tr){return !tr.classList.contains('bm-sum');}); }
         window.bmCalc=function(){ var sum=0; bmRows().forEach(function(tr){ var q=_n((tr.querySelector('.bm-qty')||{}).value); var p=_n((tr.querySelector('.bm-price')||{}).value); var amt=q*p; var a=tr.querySelector('.bm-amt'); if(a)a.textContent=_f(amt); sum+=amt; }); var c=document.getElementById('bmSumCell'); if(c)c.textContent='합계: '+_f(sum); return sum; };
         window.bmNumFmt=function(el){ if(!el)return; var v=(el.value||'').replace(/[^0-9.]/g,''); if(v===''){el.value='';}else{var p=v.split('.');p[0]=(parseInt(p[0]||'0',10)||0).toLocaleString('ko-KR');el.value=p.join('.');} bmCalc(); };
@@ -6529,10 +6530,38 @@ select.form-control { cursor: pointer; }
         }
         window.bmAddRow=function(){ var body=document.getElementById('bmItemBody'); if(!body)return; var sumRow=body.querySelector('.bm-sum'); var tr=document.createElement('tr'); tr.innerHTML=bmRowHtml(); body.insertBefore(tr,sumRow); bmCalc(); };
         window.bmDelRow=function(btn){ if(bmRows().length<=1){ if(window.showErrPop)showErrPop('발주 품목',['최소 1개 품목은 필요합니다.']); return; } var tr=btn.closest('tr'); if(tr)tr.remove(); bmCalc(); };
-        function bmMatRowHtml(r){ return '<div class="bm-mopt" data-code="'+esc(r.code)+'" data-name="'+esc(r.name)+'" data-sup="'+esc(r.supplier)+'" data-unit="'+esc(r.unit)+'" data-price="'+r.price+'" onclick="bmMatPick(this)" onmouseover="this.style.background=\'#f5f7fa\'" onmouseout="this.style.background=\'#fff\'" style="padding:7px 10px;font-size:12px;cursor:pointer;border-bottom:1px solid #eee;display:flex;justify-content:space-between;gap:8px;background:#fff"><span><b>'+r.code+'</b> · '+r.name+' <span style="color:#999">('+r.cat+')</span></span><span style="color:#999">'+r.supplier+'</span></div>'; }
+        function bmMatRowHtml(r){ return '<div class="bm-mopt" data-code="'+esc(r.code)+'" data-name="'+esc(r.name)+'" data-sup="'+esc(r.supplier)+'" data-unit="'+esc(r.unit)+'" data-price="'+r.price+'" data-cat="'+esc(r.cat)+'" onclick="bmMatPick(this)" onmouseenter="bmMatPreviewShow(this)" onmouseleave="bmMatPreviewHide()" onmouseover="this.style.background=\'#f5f7fa\'" onmouseout="this.style.background=\'#fff\'" style="padding:7px 10px;font-size:12px;cursor:pointer;border-bottom:1px solid #eee;display:flex;justify-content:space-between;gap:8px;background:#fff"><span><b>'+r.code+'</b> · '+r.name+' <span style="color:#999">('+r.cat+')</span></span><span style="color:#999">'+r.supplier+'</span></div>'; }
         window.bmMatSearch=function(inp){ var tr=inp.closest('tr'); if(!tr)return; var box=tr.querySelector('.bm-matlist'); var kw=(inp.value||'').toLowerCase(); var rows=bmMatMaster().filter(function(r){return (r.code+r.name+r.cat+r.supplier).toLowerCase().indexOf(kw)>=0;}); box.innerHTML=rows.length?rows.map(bmMatRowHtml).join(''):'<div style="padding:10px;color:#999;font-size:12px">검색 결과 없음</div>'; var rc=inp.getBoundingClientRect(); box.style.position='fixed'; box.style.left=rc.left+'px'; box.style.top=(rc.bottom+2)+'px'; box.style.width=Math.max(300,rc.width)+'px'; box.style.zIndex='10010'; box.style.display='block'; };
-        window.bmMatPick=function(el){ var tr=el.closest('tr'); if(!tr)return; tr.querySelector('.bm-vendor').textContent=el.getAttribute('data-sup'); tr.querySelector('.bm-code').textContent=el.getAttribute('data-code'); var mi=tr.querySelector('.bm-mat'); if(mi)mi.value=el.getAttribute('data-name'); tr.querySelector('.bm-unit').textContent=el.getAttribute('data-unit'); var pi=tr.querySelector('.bm-price'); if(pi)pi.value=(parseInt(el.getAttribute('data-price'),10)||0).toLocaleString('ko-KR'); var box=tr.querySelector('.bm-matlist'); if(box)box.style.display='none'; bmCalc(); };
-        document.addEventListener('click',function(ev){ if(ev.target.closest && !ev.target.closest('#bmItemBody td')){ document.querySelectorAll('#bmItemBody .bm-matlist').forEach(function(b){b.style.display='none';}); } });
+        window.bmMatPick=function(el){ var tr=el.closest('tr'); if(!tr)return; tr.querySelector('.bm-vendor').textContent=el.getAttribute('data-sup'); tr.querySelector('.bm-code').textContent=el.getAttribute('data-code'); var mi=tr.querySelector('.bm-mat'); if(mi)mi.value=el.getAttribute('data-name'); tr.querySelector('.bm-unit').textContent=el.getAttribute('data-unit'); var pi=tr.querySelector('.bm-price'); if(pi)pi.value=(parseInt(el.getAttribute('data-price'),10)||0).toLocaleString('ko-KR'); var box=tr.querySelector('.bm-matlist'); if(box)box.style.display='none'; bmMatPreviewHide(); bmCalc(); };
+        document.addEventListener('click',function(ev){ if(ev.target.closest && !ev.target.closest('#bmItemBody td')){ document.querySelectorAll('#bmItemBody .bm-matlist').forEach(function(b){b.style.display='none';}); bmMatPreviewHide(); } });
+
+        // 자재 검색 결과 호버 시 품목 등록 상세정보 미리보기 (품목관리에 등록된 ITEM_DB 참조, 읽기 전용)
+        window.bmMatPreviewShow=function(el){
+          var box=document.getElementById('bmMatPreview'); if(!box)return;
+          var code=el.getAttribute('data-code'), name=el.getAttribute('data-name'), cat=el.getAttribute('data-cat'), sup=el.getAttribute('data-sup'), unit=el.getAttribute('data-unit'), price=el.getAttribute('data-price');
+          var d=(window.ITEM_DB||{})[code]||{};
+          function row(l,v){ return v?('<tr><td style="color:#888;padding:3px 10px 3px 0;white-space:nowrap;vertical-align:top">'+l+'</td><td style="font-weight:600">'+v+'</td></tr>'):''; }
+          box.innerHTML='<div style="padding:12px 14px">'
+            +'<div style="font-weight:800;color:#1B2B4B;font-size:13px;margin-bottom:2px">'+name+'</div>'
+            +'<div style="font-family:monospace;color:#999;font-size:11px;margin-bottom:8px">'+code+'</div>'
+            +'<table style="border-collapse:collapse;font-size:12px">'
+            + row('세부유형', d.subcat||cat||'-')
+            + row('공급처', d.cust||sup||'-')
+            + row('단위', d.unit||unit||'-')
+            + row('매입단가', d.std?(d.std+'원'):(price?_f(price)+'원':'-'))
+            + row('판매단가', d.sell?(d.sell+'원'):'')
+            + row('안전재고', d.safe||'')
+            + row('발주점(위험재고)', d.risk||'')
+            +'</table>'
+            + (Object.keys(d).length?'':'<div style="margin-top:8px;color:#bbb;font-size:11px">품목 등록에 상세 정보가 없습니다.</div>')
+            +'</div>';
+          var rc=el.getBoundingClientRect();
+          box.style.display='block';
+          var bw=box.offsetWidth||260;
+          var left=rc.right+8; if(left+bw>innerWidth) left=rc.left-bw-8;
+          box.style.left=left+'px'; box.style.top=Math.min(rc.top, innerHeight-box.offsetHeight-10)+'px';
+        };
+        window.bmMatPreviewHide=function(){ var box=document.getElementById('bmMatPreview'); if(box)box.style.display='none'; };
 
         window.bmSaveReg=function(){
           var rows=bmRows().filter(function(tr){ return _n((tr.querySelector('.bm-qty')||{}).value)>0 && tr.querySelector('.bm-code').textContent!=='-'; });
