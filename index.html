@@ -6473,6 +6473,7 @@ select.form-control { cursor: pointer; }
       (function(){
         function _n(v){ return parseFloat(String(v==null?'':v).replace(/[^0-9.\-]/g,''))||0; }
         function _f(n){ return (Math.round(n)||0).toLocaleString('ko-KR'); }
+        function _fq(n){ return (Number(n)||0).toLocaleString('ko-KR',{maximumFractionDigits:2}); } // 수량은 kg 등 소수점 단위가 있어 반올림하지 않음
         function esc(x){ return (''+x).replace(/"/g,'&quot;'); }
 
         window.SM_ISSUERS=['(주)엘앤피','제이비엘'];
@@ -6532,7 +6533,7 @@ select.form-control { cursor: pointer; }
         window.bmPoDoc=function(i){
           _docIdx=i; var p=(window.SUBMAT_PO||[])[i]; if(!p)return;
           var vat=Math.round(p.amount*0.1);
-          var rows=(p.items||[]).map(function(it,idx){ return '<tr><td class="c">'+(idx+1)+'</td><td>'+it.name+'</td><td class="c">'+it.unit+'</td><td class="r">'+_f(it.qty)+'</td><td class="r">'+_f(it.price)+'</td><td class="r">'+_f(it.amt)+'</td></tr>'; }).join('');
+          var rows=(p.items||[]).map(function(it,idx){ return '<tr><td class="c">'+(idx+1)+'</td><td>'+it.name+'</td><td class="c">'+it.unit+'</td><td class="r">'+_fq(it.qty)+'</td><td class="r">'+_f(it.price)+'</td><td class="r">'+_f(it.amt)+'</td></tr>'; }).join('');
           var issuerOpts=(window.SM_ISSUERS||['(주)엘앤피','제이비엘']).map(function(s){ return '<option'+(s===p.issuer?' selected':'')+'>'+s+'</option>'; }).join('');
           var box=document.getElementById('bmDocBox');
           box.innerHTML='<style>#bmDocBox .r{text-align:right}#bmDocBox .c{text-align:center}#bmDocBox table{width:100%;border-collapse:collapse;font-size:12px}#bmDocBox th,#bmDocBox td{border:1px solid #ccc;padding:6px 8px}#bmDocBox th{background:#f3f6fb}</style>'
@@ -6625,7 +6626,7 @@ select.form-control { cursor: pointer; }
         // ===== 입고 처리 모달 =====
         var _recvIdx=-1;
         window.bmOpenRecv=function(i){ _recvIdx=i; var p=(window.SUBMAT_PO||[])[i]; if(!p)return;
-          document.getElementById('bmRecvInfo').innerHTML='발주번호 <b style="color:#1F497D">'+p.no+'</b> · '+p.vendor+' · '+(p.items||[]).map(function(x){return x.name+' '+_f(x.qty)+x.unit;}).join(', ')+' · 합계 '+_f(p.amount)+'원';
+          document.getElementById('bmRecvInfo').innerHTML='발주번호 <b style="color:#1F497D">'+p.no+'</b> · '+p.vendor+' · '+(p.items||[]).map(function(x){return x.name+' '+_fq(x.qty)+x.unit;}).join(', ')+' · 합계 '+_f(p.amount)+'원';
           document.getElementById('bmRecvLot').value=''; document.getElementById('bmRecvOv').style.display='flex';
         };
         window.bmCloseRecv=function(){ document.getElementById('bmRecvOv').style.display='none'; };
@@ -6681,6 +6682,7 @@ select.form-control { cursor: pointer; }
       <script>
       (function(){
         function _f(n){ return (Math.round(n)||0).toLocaleString('ko-KR'); }
+        function _fq(n){ return (Number(n)||0).toLocaleString('ko-KR',{maximumFractionDigits:2}); } // 수량은 kg 등 소수점 단위가 있어 반올림하지 않음
         function smcYm(r){ return '2026-'+String(r.date||'').slice(0,2); } // ponytail: 연도 2026 고정(데모 데이터 관행), 실서비스 시 date에 연도 포함 필요
         window.SUBMAT_CLOSE=window.SUBMAT_CLOSE||[];
         window.smcConfirm=function(no,on){
@@ -6726,7 +6728,7 @@ select.form-control { cursor: pointer; }
             if(r.st==='ok') return '<span class="badge-status s-pass">확정</span> <button class="btn btn-outline" style="padding:1px 7px;font-size:11px" onclick="smcConfirm(\''+r.no+'\',false)">취소</button>';
             return '<span class="badge-status s-wait">미확정</span> <button class="btn btn-outline" style="padding:1px 7px;font-size:11px" onclick="smcConfirm(\''+r.no+'\',true)">확정</button>';
           }
-          tb.innerHTML=list.map(function(r){ return '<tr><td style="color:#1F497D;font-weight:bold">'+r.no+'</td><td>'+r.date+'</td><td style="font-family:monospace;font-size:11px">'+(r.code||'-')+'</td><td>'+(r.name||'-')+'</td><td>'+(r.vendor||'-')+'</td><td class="text-center">'+(r.unit||'-')+'</td><td class="text-right">'+_f(r.qty)+'</td><td class="text-right" style="font-weight:bold">'+_f(r.amt)+'</td><td style="font-family:monospace;font-size:11px">'+(r.lot||'-')+'</td><td class="text-center">'+qcb(r.qc)+'</td><td>'+(r.wh||'-')+'</td><td class="text-center">'+(r.exp||'제조경비')+'</td><td class="text-center" style="white-space:nowrap">'+stc(r)+'</td></tr>'; }).join('');
+          tb.innerHTML=list.map(function(r){ return '<tr><td style="color:#1F497D;font-weight:bold">'+r.no+'</td><td>'+r.date+'</td><td style="font-family:monospace;font-size:11px">'+(r.code||'-')+'</td><td>'+(r.name||'-')+'</td><td>'+(r.vendor||'-')+'</td><td class="text-center">'+(r.unit||'-')+'</td><td class="text-right">'+_fq(r.qty)+'</td><td class="text-right" style="font-weight:bold">'+_f(r.amt)+'</td><td style="font-family:monospace;font-size:11px">'+(r.lot||'-')+'</td><td class="text-center">'+qcb(r.qc)+'</td><td>'+(r.wh||'-')+'</td><td class="text-center">'+(r.exp||'제조경비')+'</td><td class="text-center" style="white-space:nowrap">'+stc(r)+'</td></tr>'; }).join('');
           var c=document.getElementById('smcCount'); if(c)c.textContent=list.length+'건';
           var e=document.getElementById('smcEmpty'); if(e)e.style.display=list.length?'none':'block';
         };
